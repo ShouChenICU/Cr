@@ -1,5 +1,8 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.utils.Logger;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -19,6 +22,7 @@ class NetCore {
         if (isRun) {
             return;
         }
+        Logger.info("init");
         selector = Selector.open();
         if (port >= 0 && port < 65536) {
             serverSocketChannel = ServerSocketChannel.open();
@@ -26,9 +30,15 @@ class NetCore {
             serverSocketChannel.bind(new InetSocketAddress(port));
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         }
+        isRun = true;
+        Thread thread = new Thread(NetCore::loop);
+        thread.setDaemon(true);
+        thread.start();
+        Logger.info("init done");
     }
 
     private static void loop() {
+        Logger.info("start loop");
         while (isRun) {
             // TODO: 2022/4/22
         }
@@ -38,7 +48,18 @@ class NetCore {
         return isRun;
     }
 
-    public static void close() {
-        // TODO: 2022/4/22
+    public static synchronized void stop() throws IOException {
+        if (!isRun) {
+            return;
+        }
+        Logger.info("stop");
+        if (serverSocketChannel != null) {
+            serverSocketChannel.close();
+            serverSocketChannel = null;
+        }
+        isRun = false;
+        selector.close();
+        selector = null;
+        Logger.info("stop done");
     }
 }

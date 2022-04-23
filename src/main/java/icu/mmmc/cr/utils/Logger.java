@@ -47,7 +47,7 @@ public final class Logger {
     }
 
     public static void error(Object msg) {
-        if (level > 3) {
+        if (msg == null || level > 3) {
             return;
         }
         StringBuilder builder = new StringBuilder(getTimeStr());
@@ -60,18 +60,22 @@ public final class Logger {
         builder.append(":\033[36m");
         builder.append(element.getLineNumber());
         builder.append("\033[0m) \033[31mERROR\033[0m -> ");
-        if (msg instanceof String) {
-            builder.append(msg);
-        } else if (msg instanceof Exception) {
+        if (msg instanceof Exception) {
             builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-        }
-        synchronized (Logger.class) {
-            out.println(builder);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
+            ((Exception) msg).printStackTrace(out);
+        } else {
+            builder.append(msg);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
         }
     }
 
     public static void warn(Object msg) {
-        if (level > 2) {
+        if (msg == null || level > 2) {
             return;
         }
         StringBuilder builder = new StringBuilder(getTimeStr());
@@ -84,18 +88,22 @@ public final class Logger {
         builder.append(":\033[36m");
         builder.append(element.getLineNumber());
         builder.append("\033[0m) \033[33mWARN\033[0m -> ");
-        if (msg instanceof String) {
-            builder.append(msg);
-        } else if (msg instanceof Exception) {
+        if (msg instanceof Exception) {
             builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-        }
-        synchronized (Logger.class) {
-            out.println(builder);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
+            ((Exception) msg).printStackTrace(out);
+        } else {
+            builder.append(msg);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
         }
     }
 
     public static void info(Object msg) {
-        if (level > 1) {
+        if (msg == null || level > 1) {
             return;
         }
         StringBuilder builder = new StringBuilder(getTimeStr());
@@ -108,18 +116,22 @@ public final class Logger {
         builder.append(":\033[36m");
         builder.append(element.getLineNumber());
         builder.append("\033[0m) \033[32mINFO\033[0m -> ");
-        if (msg instanceof String) {
-            builder.append(msg);
-        } else if (msg instanceof Exception) {
+        if (msg instanceof Exception) {
             builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-        }
-        synchronized (Logger.class) {
-            out.println(builder);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
+            ((Exception) msg).printStackTrace(out);
+        } else {
+            builder.append(msg);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
         }
     }
 
     public static void debug(Object msg) {
-        if (level > 0) {
+        if (msg == null || level > 0) {
             return;
         }
         StringBuilder builder = new StringBuilder(getTimeStr());
@@ -132,13 +144,17 @@ public final class Logger {
         builder.append(":\033[36m");
         builder.append(element.getLineNumber());
         builder.append("\033[0m) \033[34mDEBUG\033[0m -> ");
-        if (msg instanceof String) {
-            builder.append(msg);
-        } else if (msg instanceof Exception) {
+        if (msg instanceof Exception) {
             builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-        }
-        synchronized (Logger.class) {
-            out.println(builder);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
+            ((Exception) msg).printStackTrace(out);
+        } else {
+            builder.append(msg);
+            synchronized (Logger.class) {
+                out.println(builder);
+            }
         }
     }
 

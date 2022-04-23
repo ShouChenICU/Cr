@@ -1,4 +1,4 @@
-package icu.mmmc.cr;
+package icu.mmmc.cr.entities;
 
 import java.security.PublicKey;
 
