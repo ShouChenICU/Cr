@@ -7,6 +7,9 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * 网络核心类
@@ -18,6 +21,11 @@ class NetCore {
     private static Selector selector;
     private static ServerSocketChannel serverSocketChannel;
 
+    /**
+     * 初始化网络核心
+     *
+     * @param port 监听端口，如果超出范围则不监听
+     */
     public static synchronized void init(int port) throws Exception {
         if (isRun) {
             return;
@@ -39,20 +47,44 @@ class NetCore {
 
     private static void loop() {
         Logger.info("start loop");
+        Set<SelectionKey> selectionKeySet = selector.selectedKeys();
         while (isRun) {
-            // TODO: 2022/4/22
+            try {
+                selector.select();
+            } catch (Exception e) {
+                Logger.error(e);
+                halt();
+            }
+            Iterator<SelectionKey> iterator = selectionKeySet.iterator();
+            while (iterator.hasNext()) {
+                SelectionKey key = iterator.next();
+                iterator.remove();
+                if (key.isAcceptable()) {
+                    ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
+                    try {
+                        SocketChannel channel = serverChannel.accept();
+                        channel.configureBlocking(false);
+                        SelectionKey key0 = channel.register(selector, 0);
+                        // TODO: 2022/4/24
+                    } catch (IOException e) {
+                        Logger.warn(e);
+                    }
+                } else if (key.isReadable()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    // TODO: 2022/4/24
+                }
+            }
         }
     }
 
-    public static boolean isRun() {
-        return isRun;
-    }
-
+    /**
+     * 终止
+     */
     public static synchronized void halt() {
         if (!isRun) {
             return;
         }
-        Logger.info("stop");
+        Logger.info("halt");
         if (serverSocketChannel != null) {
             try {
                 serverSocketChannel.close();
@@ -68,6 +100,6 @@ class NetCore {
             Logger.warn(e);
         }
         selector = null;
-        Logger.info("stop done");
+        Logger.info("halt done");
     }
 }
