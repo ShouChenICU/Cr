@@ -56,7 +56,8 @@ public class WorkerThreadPool {
     /**
      * 关闭任务线程池
      */
-    public static void stop() {
+    public static void halt() {
+        Logger.info("stop");
         try {
             executor.shutdown();
             if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {

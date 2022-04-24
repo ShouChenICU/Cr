@@ -48,17 +48,25 @@ class NetCore {
         return isRun;
     }
 
-    public static synchronized void stop() throws IOException {
+    public static synchronized void halt() {
         if (!isRun) {
             return;
         }
         Logger.info("stop");
         if (serverSocketChannel != null) {
-            serverSocketChannel.close();
+            try {
+                serverSocketChannel.close();
+            } catch (IOException e) {
+                Logger.warn(e);
+            }
             serverSocketChannel = null;
         }
         isRun = false;
-        selector.close();
+        try {
+            selector.close();
+        } catch (IOException e) {
+            Logger.warn(e);
+        }
         selector = null;
         Logger.info("stop done");
     }

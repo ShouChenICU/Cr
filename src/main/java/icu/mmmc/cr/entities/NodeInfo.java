@@ -8,5 +8,6 @@ import java.security.PublicKey;
  * @author shouchen
  */
 public class NodeInfo {
+    private String uuid;
     private PublicKey publicKey;
 }

@@ -13,6 +13,8 @@ public class Cr {
 
     /**
      * 初始化
+     *
+     * @param configuration 配置
      */
     public static synchronized void init(Configuration configuration) throws Exception {
         if (Cr.configuration != null) {
@@ -28,5 +30,17 @@ public class Cr {
             NetCore.init(-1);
         }
         Logger.info("Cr init done");
+    }
+
+    /**
+     * 终止
+     */
+    public static synchronized void halt() {
+        if (configuration == null) {
+            return;
+        }
+        Logger.info("Cr stop");
+        NetCore.halt();
+        WorkerThreadPool.halt();
     }
 }
