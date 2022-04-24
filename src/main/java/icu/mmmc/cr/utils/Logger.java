@@ -13,20 +13,22 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author shouchen
  */
-@SuppressWarnings({"DuplicatedCode", "unused"})
+@SuppressWarnings("unused")
 public final class Logger {
     public static final int DEBUG = 0;
     public static final int INFO = 1;
     public static final int WARN = 2;
     public static final int ERROR = 3;
     private static final Map<Long, DateFormat> DATE_FORMAT_MAP;
+    private static final PrintStream CONSOLE_OUT;
+    private static PrintStream fileOut;
     private static int level;
-    private static PrintStream out;
 
     static {
         DATE_FORMAT_MAP = new ConcurrentHashMap<>();
         level = 1;
-        out = System.out;
+        CONSOLE_OUT = System.out;
+        fileOut = null;
     }
 
     /**
@@ -42,120 +44,83 @@ public final class Logger {
         Logger.level = level;
     }
 
-    public static void setOut(PrintStream out) {
-        Logger.out = out;
+    public static void setFileOut(PrintStream fileOut) {
+        synchronized (Logger.class) {
+            Logger.fileOut = fileOut;
+        }
+    }
+
+    private static void log(int lv, Object msg) {
+        StringBuilder builder = new StringBuilder(getTimeStr());
+        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        StackTraceElement element = elements[elements.length > 3 ? 3 : elements.length - 1];
+        builder.append(" [\033[35m");
+        builder.append(Thread.currentThread().getName());
+        builder.append("\033[0m] (");
+        builder.append(element.getClassName());
+        builder.append(":\033[36m");
+        builder.append(element.getLineNumber());
+        switch (lv) {
+            case 0:
+                builder.append("\033[0m) \033[34mDEBUG\033[0m -> ");
+                break;
+            case 1:
+                builder.append("\033[0m) \033[32mINFO\033[0m -> ");
+                break;
+            case 2:
+                builder.append("\033[0m) \033[33mWARN\033[0m -> ");
+                break;
+            case 3:
+                builder.append("\033[0m) \033[31mERROR\033[0m -> ");
+                break;
+        }
+        if (msg instanceof Exception) {
+            builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
+            synchronized (Logger.class) {
+                CONSOLE_OUT.println(builder);
+                ((Exception) msg).printStackTrace(CONSOLE_OUT);
+                if (fileOut != null) {
+                    fileOut.println(builder);
+                    ((Exception) msg).printStackTrace(fileOut);
+                }
+            }
+        } else {
+            builder.append(msg);
+            synchronized (Logger.class) {
+                CONSOLE_OUT.println(builder);
+                if (fileOut != null) {
+                    fileOut.println(builder);
+                }
+            }
+        }
     }
 
     public static void error(Object msg) {
         if (msg == null || level > 3) {
             return;
         }
-        StringBuilder builder = new StringBuilder(getTimeStr());
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        StackTraceElement element = elements[elements.length > 1 ? 2 : elements.length - 1];
-        builder.append(" [\033[35m");
-        builder.append(Thread.currentThread().getName());
-        builder.append("\033[0m] (");
-        builder.append(element.getClassName());
-        builder.append(":\033[36m");
-        builder.append(element.getLineNumber());
-        builder.append("\033[0m) \033[31mERROR\033[0m -> ");
-        if (msg instanceof Exception) {
-            builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-            ((Exception) msg).printStackTrace(out);
-        } else {
-            builder.append(msg);
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-        }
+        log(3, msg);
     }
 
     public static void warn(Object msg) {
         if (msg == null || level > 2) {
             return;
         }
-        StringBuilder builder = new StringBuilder(getTimeStr());
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        StackTraceElement element = elements[elements.length > 1 ? 2 : elements.length - 1];
-        builder.append(" [\033[35m");
-        builder.append(Thread.currentThread().getName());
-        builder.append("\033[0m] (");
-        builder.append(element.getClassName());
-        builder.append(":\033[36m");
-        builder.append(element.getLineNumber());
-        builder.append("\033[0m) \033[33mWARN\033[0m -> ");
-        if (msg instanceof Exception) {
-            builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-            ((Exception) msg).printStackTrace(out);
-        } else {
-            builder.append(msg);
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-        }
+        log(2, msg);
     }
 
     public static void info(Object msg) {
         if (msg == null || level > 1) {
             return;
         }
-        StringBuilder builder = new StringBuilder(getTimeStr());
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        StackTraceElement element = elements[elements.length > 1 ? 2 : elements.length - 1];
-        builder.append(" [\033[35m");
-        builder.append(Thread.currentThread().getName());
-        builder.append("\033[0m] (");
-        builder.append(element.getClassName());
-        builder.append(":\033[36m");
-        builder.append(element.getLineNumber());
-        builder.append("\033[0m) \033[32mINFO\033[0m -> ");
-        if (msg instanceof Exception) {
-            builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-            ((Exception) msg).printStackTrace(out);
-        } else {
-            builder.append(msg);
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-        }
+        log(1, msg);
     }
 
     public static void debug(Object msg) {
         if (msg == null || level > 0) {
             return;
         }
-        StringBuilder builder = new StringBuilder(getTimeStr());
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        StackTraceElement element = elements[elements.length > 1 ? 2 : elements.length - 1];
-        builder.append(" [\033[35m");
-        builder.append(Thread.currentThread().getName());
-        builder.append("\033[0m] (");
-        builder.append(element.getClassName());
-        builder.append(":\033[36m");
-        builder.append(element.getLineNumber());
-        builder.append("\033[0m) \033[34mDEBUG\033[0m -> ");
-        if (msg instanceof Exception) {
-            builder.append(Objects.requireNonNullElse(((Exception) msg).getMessage(), msg.toString()));
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-            ((Exception) msg).printStackTrace(out);
-        } else {
-            builder.append(msg);
-            synchronized (Logger.class) {
-                out.println(builder);
-            }
-        }
+        log(0, msg);
     }
 
     private static String getTimeStr() {

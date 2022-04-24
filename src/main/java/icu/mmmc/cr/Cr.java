@@ -21,6 +21,7 @@ public class Cr {
             return;
         }
         Logger.info("Cr init");
+        Logger.info("Version: " + Version.VERSION_STRING);
         configuration.check();
         Cr.configuration = configuration;
         Logger.setLevel(configuration.getLogLevel());
