@@ -6,4 +6,9 @@ package icu.mmmc.cr.entities;
  * @author shouchen
  */
 public class RoomInfo {
+    /**
+     * 所属节点的标识码
+     */
+    private String nodeUUID;
+    private String uuid;
 }
