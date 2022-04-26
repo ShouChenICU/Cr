@@ -18,14 +18,39 @@ abstract class Node extends NetNode {
         super(key);
     }
 
+    /**
+     * 数据包处理
+     *
+     * @param data 数据
+     */
     @Override
     protected void dataHandler(byte[] data) throws Exception {
-
+        // TODO: 2022/4/26
     }
 
+    @Override
+    public void disconnect() throws Exception {
+        super.disconnect();
+        // TODO: 2022/4/26
+    }
+
+    /**
+     * 异常处理
+     *
+     * @param e 异常
+     */
     @Override
     protected void exceptionHandler(Exception e) {
         Logger.error(e);
-
+        try {
+            disconnect();
+        } catch (Exception ex) {
+            Logger.warn(ex);
+        }
     }
+
+    /**
+     * 初始化完成
+     */
+    abstract void initDone();
 }

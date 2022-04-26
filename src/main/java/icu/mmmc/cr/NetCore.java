@@ -4,10 +4,7 @@ import icu.mmmc.cr.utils.Logger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -18,6 +15,7 @@ import java.util.Set;
  */
 class NetCore {
     private static volatile boolean isRun = false;
+    private static final Object REG_LOCK = new Object();
     private static Selector selector;
     private static ServerSocketChannel serverSocketChannel;
 
@@ -45,11 +43,17 @@ class NetCore {
         Logger.info("init done");
     }
 
+    /**
+     * 网络轮询
+     */
     private static void loop() {
         Logger.info("start loop");
         Set<SelectionKey> selectionKeySet = selector.selectedKeys();
         while (isRun) {
             try {
+                synchronized (REG_LOCK) {
+                    Logger.debug("select");
+                }
                 selector.select();
             } catch (Exception e) {
                 Logger.error(e);
@@ -60,6 +64,7 @@ class NetCore {
                 SelectionKey key = iterator.next();
                 iterator.remove();
                 if (key.isAcceptable()) {
+                    Logger.debug("accept");
                     ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
                     try {
                         SocketChannel channel = serverChannel.accept();
@@ -70,10 +75,25 @@ class NetCore {
                         Logger.warn(e);
                     }
                 } else if (key.isReadable()) {
+                    Logger.debug("read");
                     SocketChannel channel = (SocketChannel) key.channel();
                     // TODO: 2022/4/24
                 }
             }
+        }
+    }
+
+    /**
+     * 注册通道
+     *
+     * @param channel 通道
+     * @return SelectionKey
+     */
+    public static SelectionKey register(SocketChannel channel) throws Exception {
+        synchronized (REG_LOCK) {
+            Logger.debug("register");
+            selector.wakeup();
+            return channel.register(selector, 0);
         }
     }
 

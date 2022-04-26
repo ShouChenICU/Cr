@@ -44,12 +44,23 @@ public final class Logger {
         Logger.level = level;
     }
 
+    /**
+     * 设置日志文件输出流
+     *
+     * @param fileOut 文件输出
+     */
     public static void setFileOut(PrintStream fileOut) {
         synchronized (Logger.class) {
             Logger.fileOut = fileOut;
         }
     }
 
+    /**
+     * 输出日志
+     *
+     * @param lv  日志等级
+     * @param msg 日志消息
+     */
     private static void log(int lv, Object msg) {
         StringBuilder builder = new StringBuilder(getTimeStr());
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
@@ -82,6 +93,7 @@ public final class Logger {
                 if (fileOut != null) {
                     fileOut.println(builder);
                     ((Exception) msg).printStackTrace(fileOut);
+                    fileOut.flush();
                 }
             }
         } else {
@@ -90,11 +102,17 @@ public final class Logger {
                 CONSOLE_OUT.println(builder);
                 if (fileOut != null) {
                     fileOut.println(builder);
+                    fileOut.flush();
                 }
             }
         }
     }
 
+    /**
+     * 错误日志
+     *
+     * @param msg 日志消息
+     */
     public static void error(Object msg) {
         if (msg == null || level > 3) {
             return;
@@ -102,6 +120,11 @@ public final class Logger {
         log(3, msg);
     }
 
+    /**
+     * 警告日志
+     *
+     * @param msg 日志消息
+     */
     public static void warn(Object msg) {
         if (msg == null || level > 2) {
             return;
@@ -109,6 +132,11 @@ public final class Logger {
         log(2, msg);
     }
 
+    /**
+     * 普通日志
+     *
+     * @param msg 日志消息
+     */
     public static void info(Object msg) {
         if (msg == null || level > 1) {
             return;
@@ -116,6 +144,11 @@ public final class Logger {
         log(1, msg);
     }
 
+    /**
+     * 测试日志
+     *
+     * @param msg 日志消息
+     */
     public static void debug(Object msg) {
         if (msg == null || level > 0) {
             return;
@@ -123,6 +156,11 @@ public final class Logger {
         log(0, msg);
     }
 
+    /**
+     * 获取当前时间的格式化字符串
+     *
+     * @return 时间格式化字符串
+     */
     private static String getTimeStr() {
         long id = Thread.currentThread().getId();
         DateFormat dateFormat = DATE_FORMAT_MAP.get(id);

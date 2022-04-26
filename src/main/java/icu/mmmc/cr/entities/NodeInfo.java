@@ -88,6 +88,15 @@ public class NodeInfo implements Serialization {
         return Objects.hash(uuid);
     }
 
+    @Override
+    public String toString() {
+        return "NodeInfo{" +
+                "uuid='" + uuid + '\'' +
+                ", publicKey=" + publicKey +
+                ", attributes=" + attributes +
+                '}';
+    }
+
     /**
      * 序列化为Bson数据
      *

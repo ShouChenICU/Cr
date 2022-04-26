@@ -1,9 +1,13 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.utils.Logger;
 
+import java.net.InetSocketAddress;
 import java.security.PrivateKey;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Cr核心主类
@@ -22,13 +26,40 @@ public class Cr {
      * @param nodeInfo   节点信息
      * @param privateKey 私钥
      */
-    public static synchronized void loadIdentity(NodeInfo nodeInfo, PrivateKey privateKey) {
+    public static synchronized boolean loadIdentity(NodeInfo nodeInfo, PrivateKey privateKey) {
         if (configuration == null) {
             Logger.warn("Cr 未初始化");
-            return;
+            return false;
+        } else if (Cr.nodeInfo != null) {
+            Logger.warn("不可重复加载身份");
+            return false;
+        } else if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
+            Logger.warn("身份信息不完整");
+            return false;
+        } else if (!Objects.equals(nodeInfo.getUuid(), UUID.nameUUIDFromBytes(nodeInfo.getPublicKey().getEncoded()).toString())) {
+            Logger.warn("身份信息异常");
+            return false;
         }
         Cr.nodeInfo = nodeInfo;
         Cr.privateKey = privateKey;
+        return true;
+    }
+
+    /**
+     * 连接到一个节点
+     *
+     * @param address  *网络地址
+     * @param callback 回调
+     */
+    public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+        try {
+            NodeManager.connectToNode(address, callback);
+        } catch (Exception e) {
+            Logger.warn(e);
+            if (callback != null) {
+                callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
+            }
+        }
     }
 
     /**
@@ -37,7 +68,7 @@ public class Cr {
      * @param configuration 配置
      */
     public static synchronized void init(Configuration configuration) throws Exception {
-        if (Cr.configuration != null) {
+        if (Cr.configuration != null || configuration == null) {
             return;
         }
         Logger.info("Cr init");
@@ -63,5 +94,7 @@ public class Cr {
         Logger.info("Cr halt");
         NetCore.halt();
         WorkerThreadPool.halt();
+        nodeInfo = null;
+        privateKey = null;
     }
 }
