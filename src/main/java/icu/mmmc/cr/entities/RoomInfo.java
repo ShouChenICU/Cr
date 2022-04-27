@@ -13,9 +13,9 @@ public class RoomInfo implements Serialization {
      */
     private String nodeUUID;
     /**
-     * 房间id
+     * 房间标识码
      */
-    private String id;
+    private String uuid;
     /**
      * 房间名
      */

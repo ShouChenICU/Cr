@@ -52,14 +52,18 @@ public class Cr {
      * @param callback 回调
      */
     public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
-        try {
-            NodeManager.connectToNode(address, callback);
-        } catch (Exception e) {
-            Logger.warn(e);
-            if (callback != null) {
-                callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
-            }
-        }
+        NodeManager.connectToNode(address, callback);
+    }
+
+    /**
+     * 判断节点是否连接
+     *
+     * @param uuid 节点标识码
+     * @return 连接状态
+     */
+    public static boolean isConnect(String uuid) {
+        Node node = NodeManager.getByUUID(uuid);
+        return node != null && node.isConnect();
     }
 
     /**

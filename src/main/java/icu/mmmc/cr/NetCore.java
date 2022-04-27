@@ -73,7 +73,7 @@ class NetCore {
                         SocketChannel channel = serverChannel.accept();
                         channel.configureBlocking(false);
                         SelectionKey key0 = channel.register(selector, 0);
-                        NodeManager.acceptNode(key0);
+                        NodeManager.acceptNode(key0, null);
                         continue;
                     } catch (IOException e) {
                         Logger.warn(e);

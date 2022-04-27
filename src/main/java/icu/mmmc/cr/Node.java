@@ -17,13 +17,22 @@ import java.util.concurrent.locks.ReentrantLock;
 abstract class Node extends NetNode {
     private final ReentrantLock postLock;
     private final Queue<PacketBody> waitSendPacketQueue;
-    private NodeInfo nodeInfo;
+    protected NodeInfo nodeInfo;
     private Encryptor encryptor;
 
     public Node(SelectionKey key) {
         super(key);
         postLock = new ReentrantLock();
         waitSendPacketQueue = new LinkedList<>();
+    }
+
+    /**
+     * 检查是否在线
+     *
+     * @return 已连接且身份有效则返回true
+     */
+    public boolean isOnline() {
+        return isConnect() && nodeInfo != null && nodeInfo.getUuid() != null;
     }
 
     /**
@@ -101,4 +110,9 @@ abstract class Node extends NetNode {
      * 初始化完成
      */
     abstract void initDone();
+
+    /**
+     * 初始化失败
+     */
+    abstract void initFail();
 }
