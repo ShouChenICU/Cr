@@ -129,7 +129,7 @@ abstract class NetNode {
                 }
                 readBuffer.clear();
             }
-            key.interestOps(SelectionKey.OP_READ);
+            key.interestOps(key.interestOps() & SelectionKey.OP_READ);
             key.selector().wakeup();
         } catch (Exception e) {
             exceptionHandler(e);

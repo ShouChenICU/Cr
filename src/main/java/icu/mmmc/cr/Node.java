@@ -4,6 +4,9 @@ import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 节点
@@ -12,10 +15,55 @@ import java.nio.channels.SelectionKey;
  * @author shouchen
  */
 abstract class Node extends NetNode {
+    private final ReentrantLock postLock;
+    private final Queue<PacketBody> waitSendPacketQueue;
     private NodeInfo nodeInfo;
+    private Encryptor encryptor;
 
     public Node(SelectionKey key) {
         super(key);
+        postLock = new ReentrantLock();
+        waitSendPacketQueue = new LinkedList<>();
+    }
+
+    /**
+     * 添加包到待发送队列
+     *
+     * @param packetBody 待发送包
+     */
+    public void postPacket(PacketBody packetBody) {
+        synchronized (waitSendPacketQueue) {
+            waitSendPacketQueue.offer(packetBody);
+            if (!postLock.isLocked()) {
+                key.interestOps(key.interestOps() & SelectionKey.OP_WRITE);
+                key.selector().wakeup();
+            }
+        }
+    }
+
+    /**
+     * 发送包
+     */
+    public void doPost() {
+        synchronized (waitSendPacketQueue) {
+            if (postLock.isLocked()) {
+                return;
+            } else {
+                postLock.lock();
+            }
+        }
+        PacketBody packetBody;
+        while (true) {
+            synchronized (waitSendPacketQueue) {
+                if (waitSendPacketQueue.size() > 0) {
+                    packetBody = waitSendPacketQueue.poll();
+                } else {
+                    postLock.unlock();
+                    return;
+                }
+            }
+            // TODO: 2022/4/27
+        }
     }
 
     /**

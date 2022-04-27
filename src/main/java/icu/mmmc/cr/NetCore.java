@@ -4,7 +4,10 @@ import icu.mmmc.cr.utils.Logger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -70,14 +73,21 @@ class NetCore {
                         SocketChannel channel = serverChannel.accept();
                         channel.configureBlocking(false);
                         SelectionKey key0 = channel.register(selector, 0);
-                        // TODO: 2022/4/24
+                        NodeManager.acceptNode(key0);
+                        continue;
                     } catch (IOException e) {
                         Logger.warn(e);
                     }
-                } else if (key.isReadable()) {
+                }
+                if (key.isReadable()) {
                     Logger.debug("read");
-                    SocketChannel channel = (SocketChannel) key.channel();
-                    // TODO: 2022/4/24
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
+                    WorkerThreadPool.execute(() -> ((Node) key.attachment()).doRead());
+                }
+                if (key.isWritable()) {
+                    Logger.debug("write");
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                    WorkerThreadPool.execute(() -> ((Node) key.attachment()).doPost());
                 }
             }
         }
