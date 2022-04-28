@@ -1,11 +1,15 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.NodeInfo;
+import icu.mmmc.cr.tasks.AbstractTask;
+import icu.mmmc.cr.tasks.InitTask0;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -14,16 +18,47 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author shouchen
  */
-abstract class Node extends NetNode {
+public abstract class Node extends NetNode {
     private final ReentrantLock postLock;
     private final Queue<PacketBody> waitSendPacketQueue;
+    private final Encryptor encryptor;
+    private final ConcurrentHashMap<Integer, AbstractTask> taskMap;
     protected NodeInfo nodeInfo;
-    private Encryptor encryptor;
+    private int taskIdCount;
 
-    public Node(SelectionKey key) {
+    public Node(SelectionKey key) throws Exception {
         super(key);
         postLock = new ReentrantLock();
         waitSendPacketQueue = new LinkedList<>();
+        encryptor = new Encryptor();
+        taskMap = new ConcurrentHashMap<>();
+        taskIdCount = 1;
+    }
+
+    /**
+     * 添加任务
+     *
+     * @param task 任务
+     */
+    public void addTask(AbstractTask task) {
+        int id;
+        synchronized (taskMap) {
+            id = taskIdCount++;
+            taskMap.put(id, task);
+        }
+        Logger.debug("add task " + id);
+        task.init(this, id);
+    }
+
+    /**
+     * 移除任务
+     *
+     * @param taskId 任务id
+     */
+    public void removeTask(int taskId) {
+        if (taskMap.remove(taskId) != null) {
+            Logger.debug("remove task " + taskId);
+        }
     }
 
     /**
@@ -71,7 +106,18 @@ abstract class Node extends NetNode {
                     return;
                 }
             }
-            // TODO: 2022/4/27
+            try {
+                byte[] dat = encryptor.encrypt(packetBody.serialize());
+                doWrite(dat);
+            } catch (Exception e) {
+                Logger.warn(e);
+                try {
+                    disconnect();
+                } catch (Exception ex) {
+                    Logger.warn(ex);
+                }
+                return;
+            }
         }
     }
 
@@ -82,13 +128,33 @@ abstract class Node extends NetNode {
      */
     @Override
     protected void dataHandler(byte[] data) throws Exception {
-        // TODO: 2022/4/26
+        PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
+        AbstractTask task = null;
+        switch (packetBody.getTaskType()) {
+            case TaskTypes.INIT:
+                if (packetBody.getDestination() == 0) {
+                    task = new InitTask0(null);
+                    addTask(task);
+                } else {
+                    task = taskMap.get(packetBody.getDestination());
+                }
+                break;
+        }
+        if (task == null) {
+            throw new Exception("task not found");
+        }
+        AbstractTask finalTask = task;
+        WorkerThreadPool.execute(() -> finalTask.handlePacket(packetBody));
     }
 
     @Override
     public void disconnect() throws Exception {
         super.disconnect();
-        // TODO: 2022/4/26
+        synchronized (taskMap) {
+            for (AbstractTask task : taskMap.values()) {
+                task.halt("disconnect");
+            }
+        }
     }
 
     /**

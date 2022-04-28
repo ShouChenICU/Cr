@@ -8,6 +8,8 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.*;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -17,11 +19,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author shouchen
  */
 final class NodeManager {
+    private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ReadWriteLock READ_WRITE_LOCK;
     private static final Map<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
 
     static {
+        TIMER_EXECUTOR = new ScheduledThreadPoolExecutor(1, r -> {
+            Thread thread = new Thread(r);
+            thread.setDaemon(true);
+            return thread;
+        });
         READ_WRITE_LOCK = new ReentrantReadWriteLock();
         NODE_MAP = new HashMap<>();
         CONNECTING_NODE_LIST = new ArrayList<>();
@@ -44,9 +52,10 @@ final class NodeManager {
             Logger.debug(msg);
             callback.start();
             channel = SocketChannel.open(address);
-            msg = "connected to " + channel.getRemoteAddress();
+            msg = "connecting to " + channel.getRemoteAddress();
             Logger.debug(msg);
             callback.update(0, msg);
+            channel.configureBlocking(false);
             key = NetCore.register(channel);
             Node node = acceptNode(key, callback);
             // TODO: 2022/4/27
@@ -68,7 +77,7 @@ final class NodeManager {
      *
      * @param key 网络键
      */
-    public static Node acceptNode(SelectionKey key, ProgressCallback callback) {
+    public static Node acceptNode(SelectionKey key, ProgressCallback callback) throws Exception {
         if (callback == null) {
             callback = new ProgressAdapter();
         }
@@ -89,7 +98,7 @@ final class NodeManager {
                     } else {
                         NODE_MAP.put(uuid, this);
                         finalCallback.done();
-                        Logger.info("connect to " + uuid);
+                        Logger.info("connected to " + uuid);
                     }
                 } catch (Exception e) {
                     Logger.warn(e);
@@ -112,12 +121,13 @@ final class NodeManager {
                 try {
                     super.disconnect();
                 } catch (Exception e) {
-                    Logger.warn(e);
+                    Logger.error(e);
                 }
                 READ_WRITE_LOCK.writeLock().lock();
                 try {
-                    Logger.debug("remove " + nodeInfo.getUuid());
-                    NODE_MAP.remove(nodeInfo.getUuid());
+                    if (isOnline() && NODE_MAP.remove(nodeInfo.getUuid()) != null) {
+                        Logger.debug("remove " + nodeInfo.getUuid());
+                    }
                 } catch (Exception e) {
                     Logger.warn(e);
                 } finally {
@@ -128,6 +138,12 @@ final class NodeManager {
         synchronized (CONNECTING_NODE_LIST) {
             CONNECTING_NODE_LIST.add(node);
         }
+        TIMER_EXECUTOR.schedule(() -> {
+            if (!node.isOnline()) {
+                Logger.debug("node init time out");
+                node.initFail();
+            }
+        }, 5, TimeUnit.SECONDS);
         key.attach(node);
         key.interestOps(SelectionKey.OP_READ);
         key.selector().wakeup();

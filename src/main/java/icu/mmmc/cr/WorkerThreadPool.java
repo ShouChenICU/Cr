@@ -50,7 +50,11 @@ public class WorkerThreadPool {
      * @param runnable 待执行任务
      */
     public static void execute(Runnable runnable) {
-        executor.execute(runnable);
+        try {
+            executor.execute(runnable);
+        } catch (Exception e) {
+            Logger.warn(e);
+        }
     }
 
     /**

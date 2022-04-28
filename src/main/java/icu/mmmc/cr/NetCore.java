@@ -21,6 +21,7 @@ class NetCore {
     private static final Object REG_LOCK = new Object();
     private static Selector selector;
     private static ServerSocketChannel serverSocketChannel;
+    private static Thread loopThread;
 
     /**
      * 初始化网络核心
@@ -40,9 +41,11 @@ class NetCore {
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         }
         isRun = true;
-        Thread thread = new Thread(NetCore::loop);
-        thread.setDaemon(true);
-        thread.start();
+        if (loopThread != null && loopThread.isAlive()) {
+            loopThread.interrupt();
+        }
+        loopThread = new Thread(NetCore::loop);
+        loopThread.start();
         Logger.info("init done");
     }
 
@@ -61,6 +64,7 @@ class NetCore {
             } catch (Exception e) {
                 Logger.error(e);
                 halt();
+                return;
             }
             Iterator<SelectionKey> iterator = selectionKeySet.iterator();
             while (iterator.hasNext()) {
@@ -73,7 +77,13 @@ class NetCore {
                         SocketChannel channel = serverChannel.accept();
                         channel.configureBlocking(false);
                         SelectionKey key0 = channel.register(selector, 0);
-                        NodeManager.acceptNode(key0, null);
+                        try {
+                            NodeManager.acceptNode(key0, null);
+                        } catch (Exception e) {
+                            Logger.warn(e);
+                            channel.close();
+                            key0.cancel();
+                        }
                         continue;
                     } catch (IOException e) {
                         Logger.warn(e);
@@ -126,10 +136,12 @@ class NetCore {
         isRun = false;
         try {
             selector.close();
-        } catch (IOException e) {
+            loopThread.join(1000);
+        } catch (Exception e) {
             Logger.warn(e);
         }
         selector = null;
+        loopThread = null;
         Logger.info("halt done");
     }
 }

@@ -37,7 +37,7 @@ public class NodeInfo implements Serialization {
     }
 
     @SuppressWarnings("unchecked")
-    public NodeInfo(byte[] dat) {
+    public NodeInfo(byte[] dat) throws Exception {
         BSONObject object = BsonUtils.deserialize(dat);
         uuid = (String) object.get("UUID");
         publicKey = KeyUtils.getPubKeyByCode((byte[]) object.get("PUB_KEY"));

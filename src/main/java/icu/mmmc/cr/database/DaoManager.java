@@ -7,6 +7,7 @@ import icu.mmmc.cr.database.interfaces.NodeInfoDao;
  *
  * @author shouchen
  */
+@SuppressWarnings("unused")
 public class DaoManager {
     private static NodeInfoDao nodeInfoDao;
 
