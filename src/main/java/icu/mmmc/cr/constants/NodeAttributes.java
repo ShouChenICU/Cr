@@ -10,5 +10,5 @@ public class NodeAttributes {
     /**
      * 昵称
      */
-    private static final String $NICK = "$NICK";
+    public static final String $NICK = "$NICK";
 }

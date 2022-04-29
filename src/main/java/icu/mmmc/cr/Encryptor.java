@@ -50,6 +50,15 @@ public class Encryptor {
     }
 
     /**
+     * 更新密钥
+     *
+     * @param aesKey AES密钥
+     */
+    public void updateKey(SecretKey aesKey) {
+        this.aesKey = aesKey;
+    }
+
+    /**
      * 加密数据
      *
      * @param dat 待加密的数据

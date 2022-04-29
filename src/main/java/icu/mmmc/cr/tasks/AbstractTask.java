@@ -21,7 +21,7 @@ public abstract class AbstractTask {
     /**
      * 所属节点
      */
-    private Node node;
+    protected Node node;
     /**
      * 任务id
      */
@@ -62,7 +62,9 @@ public abstract class AbstractTask {
      * @param msg 错误信息
      */
     public void halt(String msg) {
-        node.removeTask(taskId);
+        if (node != null) {
+            node.removeTask(taskId);
+        }
         callback.halt(msg);
     }
 
@@ -70,7 +72,9 @@ public abstract class AbstractTask {
      * 结束任务
      */
     public void done() {
-        node.removeTask(taskId);
+        if (node != null) {
+            node.removeTask(taskId);
+        }
         callback.done();
     }
 }

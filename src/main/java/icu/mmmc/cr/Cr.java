@@ -1,11 +1,14 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
 import java.security.PrivateKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,23 +29,36 @@ public class Cr {
      * @param nodeInfo   节点信息
      * @param privateKey 私钥
      */
-    public static synchronized boolean loadIdentity(NodeInfo nodeInfo, PrivateKey privateKey) {
+    public static synchronized void loadIdentity(NodeInfo nodeInfo, PrivateKey privateKey) throws Exception {
         if (configuration == null) {
-            Logger.warn("Cr 未初始化");
-            return false;
+            throw new Exception("Cr 未初始化");
         } else if (Cr.nodeInfo != null) {
-            Logger.warn("不可重复加载身份");
-            return false;
+            throw new Exception("不可重复加载身份");
         } else if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
-            Logger.warn("身份信息不完整");
-            return false;
+            throw new Exception("身份信息不完整");
         } else if (!Objects.equals(nodeInfo.getUuid(), UUID.nameUUIDFromBytes(nodeInfo.getPublicKey().getEncoded()).toString())) {
-            Logger.warn("身份信息异常");
-            return false;
+            throw new Exception("身份信息异常");
         }
         Cr.nodeInfo = nodeInfo;
         Cr.privateKey = privateKey;
-        return true;
+    }
+
+    /**
+     * 获取节点信息
+     *
+     * @return 节点信息
+     */
+    public static NodeInfo getNodeInfo() {
+        return nodeInfo;
+    }
+
+    /**
+     * 获取RSA私钥
+     *
+     * @return RSA私钥
+     */
+    public static PrivateKey getPrivateKey() {
+        return privateKey;
     }
 
     /**
@@ -56,14 +72,44 @@ public class Cr {
     }
 
     /**
-     * 判断节点是否连接
+     * 断开一个节点的连接
+     *
+     * @param uuid 节点标识码
+     */
+    public static void disconnectToNode(String uuid) {
+        Node node = NodeManager.getByUUID(uuid);
+        if (node != null) {
+            try {
+                node.disconnect();
+            } catch (Exception e) {
+                Logger.warn(e);
+            }
+        }
+    }
+
+    /**
+     * 获取在线节点信息列表
+     *
+     * @return 在线节点信息列表
+     */
+    public static List<NodeInfo> getOnlineNodeInfoList() {
+        List<Node> nodes = NodeManager.getOnlineNodeList();
+        List<NodeInfo> nodeInfos = new ArrayList<>();
+        for (Node node : nodes) {
+            nodeInfos.add(node.getNodeInfo());
+        }
+        return nodeInfos;
+    }
+
+    /**
+     * 判断节点是否在线
      *
      * @param uuid 节点标识码
      * @return 连接状态
      */
-    public static boolean isConnect(String uuid) {
+    public static boolean nodeIsOnline(String uuid) {
         Node node = NodeManager.getByUUID(uuid);
-        return node != null && node.isConnect();
+        return node != null && node.isOnline();
     }
 
     /**
@@ -80,6 +126,7 @@ public class Cr {
         configuration.check();
         Cr.configuration = configuration;
         Logger.setLevel(configuration.getLogLevel());
+        WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
         if (configuration.isListen()) {
             NetCore.init(configuration.getListenPort());
         } else {
@@ -96,9 +143,15 @@ public class Cr {
             return;
         }
         Logger.info("Cr halt");
+        NodeManager.disconnectALL();
         NetCore.halt();
         WorkerThreadPool.halt();
         nodeInfo = null;
         privateKey = null;
+        CallBack.newConnectionCallback = null;
+    }
+
+    public static class CallBack {
+        public static NewConnectionCallback newConnectionCallback;
     }
 }

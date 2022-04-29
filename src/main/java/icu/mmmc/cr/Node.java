@@ -35,6 +35,14 @@ public abstract class Node extends NetNode {
         taskIdCount = 1;
     }
 
+    public void setNodeInfo(NodeInfo nodeInfo) {
+        this.nodeInfo = nodeInfo;
+    }
+
+    public NodeInfo getNodeInfo() {
+        return nodeInfo;
+    }
+
     /**
      * 添加任务
      *
@@ -78,8 +86,8 @@ public abstract class Node extends NetNode {
     public void postPacket(PacketBody packetBody) {
         synchronized (waitSendPacketQueue) {
             waitSendPacketQueue.offer(packetBody);
-            if (!postLock.isLocked()) {
-                key.interestOps(key.interestOps() & SelectionKey.OP_WRITE);
+            if (!postLock.isLocked() && isConnect()) {
+                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
                 key.selector().wakeup();
             }
         }
@@ -122,29 +130,45 @@ public abstract class Node extends NetNode {
     }
 
     /**
+     * 获取加解密器
+     *
+     * @return 加解密器
+     */
+    public Encryptor getEncryptor() {
+        return encryptor;
+    }
+
+    /**
      * 数据包处理
      *
      * @param data 数据
      */
     @Override
     protected void dataHandler(byte[] data) throws Exception {
+        Logger.debug("data handler, length = " + data.length);
         PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
-        AbstractTask task = null;
-        switch (packetBody.getTaskType()) {
-            case TaskTypes.INIT:
-                if (packetBody.getDestination() == 0) {
+        AbstractTask task;
+        if (packetBody.getDestination() == 0) {
+            switch (packetBody.getTaskType()) {
+                case TaskTypes.INIT:
                     task = new InitTask0(null);
                     addTask(task);
-                } else {
-                    task = taskMap.get(packetBody.getDestination());
-                }
-                break;
+                    break;
+                default:
+                    throw new Exception("unknown task");
+            }
+        } else {
+            task = taskMap.get(packetBody.getDestination());
         }
         if (task == null) {
             throw new Exception("task not found");
         }
         AbstractTask finalTask = task;
-        WorkerThreadPool.execute(() -> finalTask.handlePacket(packetBody));
+        WorkerThreadPool.execute(() -> {
+            synchronized (finalTask) {
+                finalTask.handlePacket(packetBody);
+            }
+        });
     }
 
     @Override
@@ -175,10 +199,10 @@ public abstract class Node extends NetNode {
     /**
      * 初始化完成
      */
-    abstract void initDone();
+    public abstract void initDone();
 
     /**
      * 初始化失败
      */
-    abstract void initFail();
+    public abstract void initFail();
 }

@@ -2,16 +2,18 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
+import icu.mmmc.cr.tasks.InitTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * 节点管理器
@@ -20,8 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 final class NodeManager {
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
-    private static final ReadWriteLock READ_WRITE_LOCK;
-    private static final Map<String, Node> NODE_MAP;
+    private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
 
     static {
@@ -30,8 +31,7 @@ final class NodeManager {
             thread.setDaemon(true);
             return thread;
         });
-        READ_WRITE_LOCK = new ReentrantReadWriteLock();
-        NODE_MAP = new HashMap<>();
+        NODE_MAP = new ConcurrentHashMap<>();
         CONNECTING_NODE_LIST = new ArrayList<>();
     }
 
@@ -58,7 +58,7 @@ final class NodeManager {
             channel.configureBlocking(false);
             key = NetCore.register(channel);
             Node node = acceptNode(key, callback);
-            // TODO: 2022/4/27
+            node.addTask(new InitTask1(callback));
         } catch (Exception e) {
             Logger.warn(e);
             callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
@@ -84,31 +84,30 @@ final class NodeManager {
         ProgressCallback finalCallback = callback;
         Node node = new Node(key) {
             @Override
-            void initDone() {
+            public void initDone() {
                 synchronized (CONNECTING_NODE_LIST) {
                     CONNECTING_NODE_LIST.remove(this);
                 }
-                READ_WRITE_LOCK.writeLock().lock();
                 try {
                     String uuid = nodeInfo.getUuid();
-                    if (NODE_MAP.get(uuid) != null) {
-                        finalCallback.halt("connect repeatedly ");
-                        Logger.debug("connect repeatedly " + uuid);
-                        disconnect();
-                    } else {
-                        NODE_MAP.put(uuid, this);
-                        finalCallback.done();
-                        Logger.info("connected to " + uuid);
+                    synchronized (NODE_MAP) {
+                        if (NODE_MAP.get(uuid) != null) {
+                            finalCallback.halt("connect repeatedly ");
+                            Logger.debug("connect repeatedly " + uuid);
+                            disconnect();
+                        } else {
+                            NODE_MAP.put(uuid, this);
+                            finalCallback.done();
+                            Logger.info("connected to " + uuid);
+                        }
                     }
                 } catch (Exception e) {
                     Logger.warn(e);
-                } finally {
-                    READ_WRITE_LOCK.writeLock().unlock();
                 }
             }
 
             @Override
-            void initFail() {
+            public void initFail() {
                 synchronized (CONNECTING_NODE_LIST) {
                     CONNECTING_NODE_LIST.remove(this);
                 }
@@ -123,15 +122,12 @@ final class NodeManager {
                 } catch (Exception e) {
                     Logger.error(e);
                 }
-                READ_WRITE_LOCK.writeLock().lock();
                 try {
                     if (isOnline() && NODE_MAP.remove(nodeInfo.getUuid()) != null) {
                         Logger.debug("remove " + nodeInfo.getUuid());
                     }
                 } catch (Exception e) {
                     Logger.warn(e);
-                } finally {
-                    READ_WRITE_LOCK.writeLock().unlock();
                 }
             }
         };
@@ -143,7 +139,7 @@ final class NodeManager {
                 Logger.debug("node init time out");
                 node.initFail();
             }
-        }, 5, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
         key.attach(node);
         key.interestOps(SelectionKey.OP_READ);
         key.selector().wakeup();
@@ -157,11 +153,38 @@ final class NodeManager {
      * @return 节点
      */
     public static Node getByUUID(String uuid) {
-        READ_WRITE_LOCK.readLock().lock();
-        try {
-            return NODE_MAP.get(uuid);
-        } finally {
-            READ_WRITE_LOCK.readLock().unlock();
+        return NODE_MAP.get(uuid);
+    }
+
+    /**
+     * 获取在线节点列表
+     *
+     * @return 在线节点列表
+     */
+    public static List<Node> getOnlineNodeList() {
+        return new ArrayList<>(NODE_MAP.values());
+    }
+
+    /**
+     * 断开所有连接
+     */
+    public static void disconnectALL() {
+        synchronized (CONNECTING_NODE_LIST) {
+            for (Node node : CONNECTING_NODE_LIST) {
+                try {
+                    node.disconnect();
+                } catch (Exception e) {
+                    Logger.warn(e);
+                }
+            }
+            CONNECTING_NODE_LIST.clear();
+        }
+        for (Node node : NODE_MAP.values()) {
+            try {
+                node.disconnect();
+            } catch (Exception e) {
+                Logger.warn(e);
+            }
         }
     }
 }

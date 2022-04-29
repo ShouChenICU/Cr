@@ -1,5 +1,8 @@
 package icu.mmmc.cr.utils;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -13,7 +16,31 @@ import java.security.spec.X509EncodedKeySpec;
 @SuppressWarnings("unused")
 public final class KeyUtils {
     private static final String RSA = "RSA";
+    private static final String AES = "AES";
+    private static final int AES_KEY_SIZE = 256;
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
+
+    /**
+     * 生成AES密钥
+     *
+     * @return AES密钥
+     * @throws Exception 如果发生错误
+     */
+    public static SecretKey genAESKey() throws Exception {
+        KeyGenerator generator = KeyGenerator.getInstance(AES);
+        generator.init(AES_KEY_SIZE, new SecureRandom());
+        return generator.generateKey();
+    }
+
+    /**
+     * 解析AES密钥
+     *
+     * @param code 密钥code
+     * @return AES密钥
+     */
+    public static SecretKey getAESKey(byte[] code) {
+        return new SecretKeySpec(code, AES);
+    }
 
     /**
      * 生成RSA密钥对

@@ -89,15 +89,19 @@ class NetCore {
                         Logger.warn(e);
                     }
                 }
-                if (key.isReadable()) {
-                    Logger.debug("read");
-                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-                    WorkerThreadPool.execute(() -> ((Node) key.attachment()).doRead());
-                }
-                if (key.isWritable()) {
-                    Logger.debug("write");
-                    key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
-                    WorkerThreadPool.execute(() -> ((Node) key.attachment()).doPost());
+                try {
+                    if (key.isReadable()) {
+                        Logger.debug("read");
+                        key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
+                        WorkerThreadPool.execute(() -> ((Node) key.attachment()).doRead());
+                    }
+                    if (key.isWritable()) {
+                        Logger.debug("write");
+                        key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                        WorkerThreadPool.execute(() -> ((Node) key.attachment()).doPost());
+                    }
+                } catch (Exception e) {
+                    Logger.warn(e);
                 }
             }
         }

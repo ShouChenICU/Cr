@@ -1,5 +1,7 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.utils.Logger;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -16,7 +18,7 @@ abstract class NetNode {
     private static final int TIME_OUT_LENGTH = 100;
     private static final int TIME_OUT_COUNT = 10;
     private static final int BUFFER_SIZE = 4096;
-    protected SelectionKey key;
+    protected final SelectionKey key;
     protected ByteBuffer readBuffer;
     protected ByteBuffer writeBuffer;
     private int packetStatus;
@@ -33,11 +35,15 @@ abstract class NetNode {
      * 写操作
      */
     @SuppressWarnings("BusyWait")
-    protected void doWrite(byte[] data) {
+    public void doWrite(byte[] data) {
+        Logger.debug("do write, data length = " + data.length);
         try {
             int length = data.length;
+            if (length > 65535) {
+                throw new Exception("data length too long");
+            }
             SocketChannel channel = (SocketChannel) key.channel();
-            synchronized (this) {
+            synchronized (key) {
                 writeBuffer.clear();
                 writeBuffer.put((byte) (length % 256))
                         .put((byte) (length / 256));
@@ -129,7 +135,7 @@ abstract class NetNode {
                 }
                 readBuffer.clear();
             }
-            key.interestOps(key.interestOps() & SelectionKey.OP_READ);
+            key.interestOps(key.interestOps() | SelectionKey.OP_READ);
             key.selector().wakeup();
         } catch (Exception e) {
             exceptionHandler(e);

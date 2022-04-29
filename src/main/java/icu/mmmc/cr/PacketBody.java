@@ -29,6 +29,10 @@ public class PacketBody implements Serialization {
     private byte[] payload;
 
     public PacketBody() {
+        source = 0;
+        destination = 0;
+        taskType = 0;
+        payload = null;
     }
 
     public PacketBody(byte[] dat) {
