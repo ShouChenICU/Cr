@@ -25,6 +25,8 @@ public abstract class Node extends NetNode {
     private final ConcurrentHashMap<Integer, AbstractTask> taskMap;
     protected NodeInfo nodeInfo;
     private int taskIdCount;
+    private int sendPacketCount;
+    private int receivePacketCount;
 
     public Node(SelectionKey key) throws Exception {
         super(key);
@@ -33,10 +35,16 @@ public abstract class Node extends NetNode {
         encryptor = new Encryptor();
         taskMap = new ConcurrentHashMap<>();
         taskIdCount = 1;
+        sendPacketCount = 0;
+        receivePacketCount = 0;
     }
 
     public void setNodeInfo(NodeInfo nodeInfo) {
-        this.nodeInfo = nodeInfo;
+        synchronized (this) {
+            if (this.nodeInfo == null) {
+                this.nodeInfo = nodeInfo;
+            }
+        }
     }
 
     public NodeInfo getNodeInfo() {
@@ -111,6 +119,7 @@ public abstract class Node extends NetNode {
                     packetBody = waitSendPacketQueue.poll();
                 } else {
                     postLock.unlock();
+                    sendPacketCount++;
                     return;
                 }
             }
@@ -145,6 +154,7 @@ public abstract class Node extends NetNode {
      */
     @Override
     protected void dataHandler(byte[] data) throws Exception {
+        receivePacketCount++;
         Logger.debug("data handler, length = " + data.length);
         PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
         AbstractTask task;

@@ -19,13 +19,19 @@ abstract class NetNode {
     private static final int TIME_OUT_COUNT = 10;
     private static final int BUFFER_SIZE = 4096;
     protected final SelectionKey key;
+    protected final long createTime;
     protected ByteBuffer readBuffer;
     protected ByteBuffer writeBuffer;
+    protected long writeLength;
+    protected long readLength;
     private int packetStatus;
     private int packetLength;
     private byte[] packetData;
 
     public NetNode(SelectionKey key) {
+        this.createTime = System.currentTimeMillis();
+        this.writeLength = 0;
+        this.readLength = 0;
         this.key = key;
         this.readBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
         this.writeBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
@@ -36,6 +42,7 @@ abstract class NetNode {
      */
     @SuppressWarnings("BusyWait")
     public void doWrite(byte[] data) {
+        writeLength += data.length;
         Logger.debug("do write, data length = " + data.length);
         try {
             int length = data.length;
@@ -109,6 +116,7 @@ abstract class NetNode {
                 if (len == -1) {
                     throw new ClosedChannelException();
                 }
+                readLength += len;
                 readBuffer.flip();
                 while (readBuffer.hasRemaining()) {
                     switch (packetStatus) {
