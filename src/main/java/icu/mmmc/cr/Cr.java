@@ -3,6 +3,7 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.entities.NodeInfo;
+import icu.mmmc.cr.utils.KeyUtils;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
@@ -24,23 +25,35 @@ public class Cr {
     private static PrivateKey privateKey;
 
     /**
-     * 加载身份
+     * 初始化并加载身份
      *
-     * @param nodeInfo   节点信息
-     * @param privateKey 私钥
+     * @param configuration 配置
      */
-    public static synchronized void loadIdentity(NodeInfo nodeInfo, PrivateKey privateKey) throws Exception {
-        if (configuration == null) {
-            throw new Exception("Cr 未初始化");
-        } else if (Cr.nodeInfo != null) {
-            throw new Exception("不可重复加载身份");
-        } else if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
+    public static synchronized void init(Configuration configuration, NodeInfo nodeInfo, PrivateKey privateKey) throws Exception {
+        if (Cr.configuration != null || configuration == null) {
+            return;
+        }
+        Logger.info("Cr init");
+        Logger.info("Version: " + Version.VERSION_STRING);
+        configuration.check();
+        if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
             throw new Exception("身份信息不完整");
         } else if (!Objects.equals(nodeInfo.getUuid(), UUID.nameUUIDFromBytes(nodeInfo.getPublicKey().getEncoded()).toString())) {
             throw new Exception("身份信息异常");
+        } else if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
+            throw new Exception("密钥不匹配");
         }
         Cr.nodeInfo = nodeInfo;
         Cr.privateKey = privateKey;
+        Cr.configuration = configuration;
+        Logger.setLevel(configuration.getLogLevel());
+        WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
+        if (configuration.isListen()) {
+            NetCore.init(configuration.getListenPort());
+        } else {
+            NetCore.init(-1);
+        }
+        Logger.info("Cr init done");
     }
 
     /**
@@ -110,29 +123,6 @@ public class Cr {
     public static boolean nodeIsOnline(String uuid) {
         Node node = NodeManager.getByUUID(uuid);
         return node != null && node.isOnline();
-    }
-
-    /**
-     * 初始化
-     *
-     * @param configuration 配置
-     */
-    public static synchronized void init(Configuration configuration) throws Exception {
-        if (Cr.configuration != null || configuration == null) {
-            return;
-        }
-        Logger.info("Cr init");
-        Logger.info("Version: " + Version.VERSION_STRING);
-        configuration.check();
-        Cr.configuration = configuration;
-        Logger.setLevel(configuration.getLogLevel());
-        WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
-        if (configuration.isListen()) {
-            NetCore.init(configuration.getListenPort());
-        } else {
-            NetCore.init(-1);
-        }
-        Logger.info("Cr init done");
     }
 
     /**

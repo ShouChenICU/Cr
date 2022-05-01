@@ -9,14 +9,6 @@ import icu.mmmc.cr.entities.NodeInfo;
  */
 public interface NodeInfoDao {
     /**
-     * 插入一个节点信息
-     *
-     * @param nodeInfo 节点信息
-     * @return 是否插入成功
-     */
-    boolean insertNodeInfo(NodeInfo nodeInfo);
-
-    /**
      * 删除节点信息
      *
      * @param uuid 节点唯一标识码

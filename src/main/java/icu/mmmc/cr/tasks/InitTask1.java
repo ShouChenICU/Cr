@@ -18,7 +18,6 @@ import org.bson.BasicBSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Random;
 import java.util.UUID;
@@ -45,10 +44,7 @@ public class InitTask1 extends AbstractTask {
      */
     @Override
     public void handlePacket(PacketBody packetBody) {
-        if (packetBody.getTaskType() == TaskTypes.ERROR) {
-            halt(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
-            return;
-        }
+        super.handlePacket(packetBody);
         if (idCount == 0) {
             idCount = 1;
             // 拿到公钥

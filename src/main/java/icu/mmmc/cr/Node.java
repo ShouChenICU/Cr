@@ -2,8 +2,8 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.NodeInfo;
-import icu.mmmc.cr.tasks.AbstractTask;
 import icu.mmmc.cr.tasks.InitTask0;
+import icu.mmmc.cr.tasks.Task;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
@@ -22,7 +22,7 @@ public abstract class Node extends NetNode {
     private final ReentrantLock postLock;
     private final Queue<PacketBody> waitSendPacketQueue;
     private final Encryptor encryptor;
-    private final ConcurrentHashMap<Integer, AbstractTask> taskMap;
+    private final ConcurrentHashMap<Integer, Task> taskMap;
     protected NodeInfo nodeInfo;
     private int taskIdCount;
     private int sendPacketCount;
@@ -56,7 +56,7 @@ public abstract class Node extends NetNode {
      *
      * @param task 任务
      */
-    public void addTask(AbstractTask task) {
+    public void addTask(Task task) {
         int id;
         synchronized (taskMap) {
             id = taskIdCount++;
@@ -157,7 +157,7 @@ public abstract class Node extends NetNode {
         receivePacketCount++;
         Logger.debug("data handler, length = " + data.length);
         PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
-        AbstractTask task;
+        Task task;
         if (packetBody.getDestination() == 0) {
             switch (packetBody.getTaskType()) {
                 case TaskTypes.INIT:
@@ -173,7 +173,7 @@ public abstract class Node extends NetNode {
         if (task == null) {
             throw new Exception("task not found");
         }
-        AbstractTask finalTask = task;
+        Task finalTask = task;
         WorkerThreadPool.execute(() -> {
             synchronized (finalTask) {
                 finalTask.handlePacket(packetBody);
@@ -185,7 +185,7 @@ public abstract class Node extends NetNode {
     public void disconnect() throws Exception {
         super.disconnect();
         synchronized (taskMap) {
-            for (AbstractTask task : taskMap.values()) {
+            for (Task task : taskMap.values()) {
                 task.halt("disconnect");
             }
         }

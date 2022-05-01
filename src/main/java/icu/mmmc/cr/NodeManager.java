@@ -91,9 +91,10 @@ final class NodeManager {
                 try {
                     String uuid = nodeInfo.getUuid();
                     synchronized (NODE_MAP) {
-                        if (NODE_MAP.get(uuid) != null) {
-                            finalCallback.halt("connect repeatedly ");
-                            Logger.debug("connect repeatedly " + uuid);
+                        if (NODE_MAP.get(uuid) != null || Objects.equals(Cr.getNodeInfo().getUuid(), uuid)) {
+                            String s = "connect repeatedly " + uuid;
+                            finalCallback.halt(s);
+                            Logger.debug(s);
                             disconnect();
                         } else {
                             NODE_MAP.put(uuid, this);

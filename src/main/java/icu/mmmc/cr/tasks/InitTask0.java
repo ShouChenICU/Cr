@@ -46,10 +46,7 @@ public class InitTask0 extends AbstractTask {
      */
     @Override
     public void handlePacket(PacketBody packetBody) {
-        if (packetBody.getTaskType() == TaskTypes.ERROR) {
-            halt(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
-            return;
-        }
+        super.handlePacket(packetBody);
         if (idCount == 0) {
             idCount = 1;
             BSONObject object = BsonUtils.deserialize(packetBody.getPayload());

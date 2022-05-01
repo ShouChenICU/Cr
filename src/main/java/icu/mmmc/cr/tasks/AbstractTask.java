@@ -4,7 +4,9 @@ import icu.mmmc.cr.Node;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
+import icu.mmmc.cr.constants.TaskTypes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -13,11 +15,11 @@ import java.util.Objects;
  * @author shouchen
  */
 @SuppressWarnings("unused")
-public abstract class AbstractTask {
+public abstract class AbstractTask implements Task {
     /**
      * 时间戳
      */
-    protected final long timeStamp;
+    protected long timeStamp;
     /**
      * 所属节点
      */
@@ -39,12 +41,19 @@ public abstract class AbstractTask {
     /**
      * 初始化任务
      */
+    @Override
     public void init(Node node, int taskId) {
         this.node = node;
         this.taskId = taskId;
         callback.start();
     }
 
+    /**
+     * 获取时间戳
+     *
+     * @return 时间戳
+     */
+    @Override
     public long getTimeStamp() {
         return timeStamp;
     }
@@ -54,13 +63,21 @@ public abstract class AbstractTask {
      *
      * @param packetBody 包
      */
-    public abstract void handlePacket(PacketBody packetBody);
+    @Override
+    public void handlePacket(PacketBody packetBody) {
+        if (packetBody.getTaskType() == TaskTypes.ERROR) {
+            halt(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
+            return;
+        }
+        timeStamp = System.currentTimeMillis();
+    }
 
     /**
      * 终止
      *
      * @param msg 错误信息
      */
+    @Override
     public void halt(String msg) {
         if (node != null) {
             node.removeTask(taskId);
@@ -71,6 +88,7 @@ public abstract class AbstractTask {
     /**
      * 结束任务
      */
+    @Override
     public void done() {
         if (node != null) {
             node.removeTask(taskId);
