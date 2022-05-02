@@ -26,6 +26,10 @@ public class MemberInfo implements Serialization {
      * 用户标识码
      */
     private String userUUID;
+    /**
+     * 更新时间
+     */
+    private long updateTime;
 
     public MemberInfo() {
     }
@@ -35,6 +39,7 @@ public class MemberInfo implements Serialization {
         nodeUUID = (String) object.get("NODE_UUID");
         roomUUID = (String) object.get("ROOM_UUID");
         userUUID = (String) object.get("USER_UUID");
+        updateTime = (long) object.get("UPDATE_TIME");
     }
 
     public String getNodeUUID() {
@@ -64,6 +69,15 @@ public class MemberInfo implements Serialization {
         return this;
     }
 
+    public long getUpdateTime() {
+        return updateTime;
+    }
+
+    public MemberInfo setUpdateTime(long updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -87,6 +101,7 @@ public class MemberInfo implements Serialization {
                 "nodeUUID='" + nodeUUID + '\'' +
                 ", roomUUID='" + roomUUID + '\'' +
                 ", userUUID='" + userUUID + '\'' +
+                ", updateTime=" + updateTime +
                 '}';
     }
 
@@ -101,6 +116,7 @@ public class MemberInfo implements Serialization {
         object.put("NODE_UUID", nodeUUID);
         object.put("ROOM_UUID", roomUUID);
         object.put("USER_UUID", userUUID);
+        object.put("UPDATE_TIME", updateTime);
         return BsonUtils.serialize(object);
     }
 }

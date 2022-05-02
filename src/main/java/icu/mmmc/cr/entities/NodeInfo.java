@@ -31,6 +31,10 @@ public class NodeInfo implements Serialization {
      * 节点属性集
      */
     private final Map<String, String> attributes;
+    /**
+     * 时间戳
+     */
+    private long timestamp;
 
     public NodeInfo() {
         attributes = new HashMap<>();
@@ -42,6 +46,7 @@ public class NodeInfo implements Serialization {
         uuid = (String) object.get("UUID");
         publicKey = KeyUtils.getPubKeyByCode((byte[]) object.get("PUB_KEY"));
         attributes = (Map<String, String>) object.get("ATTRIBUTES");
+        timestamp = (long) object.get("TIMESTAMP");
     }
 
     public NodeInfo setUuid(String uuid) {
@@ -71,6 +76,15 @@ public class NodeInfo implements Serialization {
         return attributes.get(key);
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public NodeInfo setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -94,6 +108,7 @@ public class NodeInfo implements Serialization {
                 "uuid='" + uuid + '\'' +
                 ", publicKey=" + publicKey +
                 ", attributes=" + attributes +
+                ", timestamp=" + timestamp +
                 '}';
     }
 
@@ -108,6 +123,7 @@ public class NodeInfo implements Serialization {
         object.put("UUID", uuid);
         object.put("PUB_KEY", publicKey.getEncoded());
         object.put("ATTRIBUTES", attributes);
+        object.put("TIMESTAMP", timestamp);
         return BsonUtils.serialize(object);
     }
 }

@@ -5,6 +5,8 @@ import icu.mmmc.cr.utils.BsonUtils;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 
+import java.util.Objects;
+
 /**
  * 消息信息
  *
@@ -12,13 +14,34 @@ import org.bson.BasicBSONObject;
  */
 @SuppressWarnings("unused")
 public class MessageInfo implements Serialization {
+    /**
+     * 节点标识码
+     */
     private String nodeUUID;
+    /**
+     * 房间标识码
+     */
     private String roomUUID;
+    /**
+     * 消息id
+     */
     private int id;
+    /**
+     * 发送者标识码
+     */
     private String senderUUID;
+    /**
+     * 消息类型
+     */
     private int type;
+    /**
+     * 消息内容
+     */
     private String content;
-    private long timeStamp;
+    /**
+     * 时间戳
+     */
+    private long timestamp;
 
     public MessageInfo() {
     }
@@ -31,7 +54,7 @@ public class MessageInfo implements Serialization {
         senderUUID = (String) object.get("SENDER");
         type = (int) object.get("TYPE");
         content = (String) object.get("CONTENT");
-        timeStamp = (long) object.get("TIME_STAMP");
+        timestamp = (long) object.get("TIMESTAMP");
     }
 
     public String getNodeUUID() {
@@ -88,13 +111,43 @@ public class MessageInfo implements Serialization {
         return this;
     }
 
-    public long getTimeStamp() {
-        return timeStamp;
+    public long getTimestamp() {
+        return timestamp;
     }
 
-    public MessageInfo setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
+    public MessageInfo setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MessageInfo that = (MessageInfo) o;
+        return id == that.id && Objects.equals(nodeUUID, that.nodeUUID) && Objects.equals(roomUUID, that.roomUUID);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nodeUUID, roomUUID, id);
+    }
+
+    @Override
+    public String toString() {
+        return "MessageInfo{" +
+                "nodeUUID='" + nodeUUID + '\'' +
+                ", roomUUID='" + roomUUID + '\'' +
+                ", id=" + id +
+                ", senderUUID='" + senderUUID + '\'' +
+                ", type=" + type +
+                ", content='" + content + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
     }
 
     /**
@@ -111,7 +164,7 @@ public class MessageInfo implements Serialization {
         object.put("SENDER", senderUUID);
         object.put("TYPE", type);
         object.put("CONTENT", content);
-        object.put("TIME_STAMP", timeStamp);
+        object.put("TIMESTAMP", timestamp);
         return BsonUtils.serialize(object);
     }
 }
