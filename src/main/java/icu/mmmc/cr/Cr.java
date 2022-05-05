@@ -3,6 +3,7 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.entities.NodeInfo;
+import icu.mmmc.cr.exceptions.IdentityException;
 import icu.mmmc.cr.utils.KeyUtils;
 import icu.mmmc.cr.utils.Logger;
 
@@ -37,11 +38,11 @@ public class Cr {
         Logger.info("Version: " + Version.VERSION_STRING);
         configuration.check();
         if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
-            throw new Exception("身份信息不完整");
+            throw new IdentityException("Corrupted identity information");
         } else if (!Objects.equals(nodeInfo.getUuid(), UUID.nameUUIDFromBytes(nodeInfo.getPublicKey().getEncoded()).toString())) {
-            throw new Exception("身份信息异常");
+            throw new IdentityException("UUID error");
         } else if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
-            throw new Exception("密钥不匹配");
+            throw new Exception("key pair mismatch");
         }
         Cr.nodeInfo = nodeInfo;
         Cr.privateKey = privateKey;

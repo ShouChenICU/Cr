@@ -5,8 +5,9 @@ package icu.mmmc.cr;
  *
  * @author shouchen
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Configuration {
+    private static final int DEFAULT_PORT = 4224;
     /**
      * 是否监听连接请求
      */
@@ -30,7 +31,7 @@ public class Configuration {
 
     public Configuration() {
         isListen = true;
-        listenPort = 42024;
+        listenPort = DEFAULT_PORT;
         workerThreadPoolSize = Runtime.getRuntime().availableProcessors();
         logLevel = 1;
     }

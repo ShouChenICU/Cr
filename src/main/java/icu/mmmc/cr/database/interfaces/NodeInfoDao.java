@@ -7,6 +7,7 @@ import icu.mmmc.cr.entities.NodeInfo;
  *
  * @author shouchen
  */
+@SuppressWarnings("unused")
 public interface NodeInfoDao {
     /**
      * 删除节点信息
@@ -17,7 +18,7 @@ public interface NodeInfoDao {
     boolean deleteNodeInfo(String uuid);
 
     /**
-     * 修改节点信息
+     * 更新或添加节点信息
      *
      * @param nodeInfo 节点信息
      * @return 是否修改成功

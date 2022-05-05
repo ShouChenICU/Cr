@@ -161,7 +161,7 @@ public abstract class Node extends NetNode {
         if (packetBody.getDestination() == 0) {
             switch (packetBody.getTaskType()) {
                 case TaskTypes.INIT:
-                    task = new InitTask0(null);
+                    task = new InitTask0();
                     addTask(task);
                     break;
                 default:

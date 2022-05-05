@@ -3,7 +3,6 @@ package icu.mmmc.cr.tasks;
 import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.Version;
-import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.database.DaoManager;
@@ -34,8 +33,8 @@ public class InitTask0 extends AbstractTask {
     private byte[] authCode;
     private NodeInfo nodeInfo;
 
-    public InitTask0(ProgressCallback callback) {
-        super(callback);
+    public InitTask0() {
+        super(null);
         idCount = 0;
     }
 

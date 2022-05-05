@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @author shouchen
  */
 final class NodeManager {
+    private static final int CONNECT_TIMEOUT = 30;
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
@@ -98,6 +99,7 @@ final class NodeManager {
                             disconnect();
                         } else {
                             NODE_MAP.put(uuid, this);
+                            CharRoomManager.registerNode(this);
                             finalCallback.done();
                             Logger.info("connected to " + uuid);
                         }
@@ -123,12 +125,12 @@ final class NodeManager {
                 } catch (Exception e) {
                     Logger.error(e);
                 }
-                try {
-                    if (isOnline() && NODE_MAP.remove(nodeInfo.getUuid()) != null) {
+                synchronized (NODE_MAP) {
+                    String uuid = nodeInfo == null ? null : nodeInfo.getUuid();
+                    if (uuid != null && NODE_MAP.remove(uuid) != null) {
                         Logger.debug("remove " + nodeInfo.getUuid());
+                        CharRoomManager.unregisterNode(uuid);
                     }
-                } catch (Exception e) {
-                    Logger.warn(e);
                 }
             }
         };
@@ -140,7 +142,7 @@ final class NodeManager {
                 Logger.debug("node init time out");
                 node.initFail();
             }
-        }, 30, TimeUnit.SECONDS);
+        }, CONNECT_TIMEOUT, TimeUnit.SECONDS);
         key.attach(node);
         key.interestOps(SelectionKey.OP_READ);
         key.selector().wakeup();
