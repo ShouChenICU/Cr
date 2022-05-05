@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 节点管理器
+ * 管理所连接的全部节点
  *
  * @author shouchen
  */
