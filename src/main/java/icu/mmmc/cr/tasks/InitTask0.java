@@ -28,14 +28,15 @@ import java.util.UUID;
  */
 @SuppressWarnings("DuplicatedCode")
 public class InitTask0 extends AbstractTask {
-    private int idCount;
+    private static final String RSA_CIPHER_ALGORITHM = "RSA/ECB/PKCS1Padding";
+    private int stepCount;
     private PublicKey publicKey;
     private byte[] authCode;
     private NodeInfo nodeInfo;
 
     public InitTask0() {
         super(null);
-        idCount = 0;
+        stepCount = 0;
     }
 
     /**
@@ -46,8 +47,8 @@ public class InitTask0 extends AbstractTask {
     @Override
     public void handlePacket(PacketBody packetBody) {
         super.handlePacket(packetBody);
-        if (idCount == 0) {
-            idCount = 1;
+        if (stepCount == 0) {
+            stepCount = 1;
             BSONObject object = BsonUtils.deserialize(packetBody.getPayload());
             // 验证协议版本
             if (!Objects.equals(object.get("PROTOCOL"), Version.PATCH_VERSION)) {
@@ -104,12 +105,12 @@ public class InitTask0 extends AbstractTask {
                     }
                 }
             }
-        } else if (idCount == 1) {
-            idCount = 2;
+        } else if (stepCount == 1) {
+            stepCount = 2;
             // 拿到加密后的AES密钥
             byte[] bytes = packetBody.getPayload();
             try {
-                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
                 cipher.init(Cipher.DECRYPT_MODE, Cr.getPrivateKey());
                 // 解密AES密钥
                 bytes = cipher.doFinal(bytes);
@@ -120,18 +121,20 @@ public class InitTask0 extends AbstractTask {
                 // 生成随机验证码
                 authCode = new byte[random.nextInt(64) + 64];
                 random.nextBytes(authCode);
+                // 用对方公钥初始化加密器
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+                // 用对方公钥加密并发送验证码
                 node.postPacket(new PacketBody()
                         .setSource(taskId)
                         .setDestination(packetBody.getSource())
-                        // 用对方公钥加密
                         .setPayload(cipher.doFinal(authCode)));
             } catch (Exception e) {
                 Logger.warn(e);
                 halt(e.toString());
             }
-        } else if (idCount == 2) {
+        } else if (stepCount == 2) {
             byte[] bytes = packetBody.getPayload();
+            // 验证对方发来的验证码
             if (Arrays.equals(bytes, authCode)) {
                 node.postPacket(new PacketBody()
                         .setSource(taskId)

@@ -29,12 +29,13 @@ import java.util.UUID;
  */
 @SuppressWarnings("DuplicatedCode")
 public class InitTask1 extends AbstractTask {
-    private int idCount;
+    private static final String RSA_CIPHER_ALGORITHM = "RSA/ECB/PKCS1Padding";
+    private int stepCount;
     private NodeInfo nodeInfo;
 
     public InitTask1(ProgressCallback callback) {
         super(callback);
-        idCount = 0;
+        stepCount = 0;
     }
 
     /**
@@ -45,8 +46,8 @@ public class InitTask1 extends AbstractTask {
     @Override
     public void handlePacket(PacketBody packetBody) {
         super.handlePacket(packetBody);
-        if (idCount == 0) {
-            idCount = 1;
+        if (stepCount == 0) {
+            stepCount = 1;
             // 拿到公钥
             byte[] pubKeyCode = packetBody.getPayload();
             PublicKey publicKey;
@@ -91,7 +92,7 @@ public class InitTask1 extends AbstractTask {
                 }
             }
             try {
-                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
                 // 生成AES密钥
                 SecretKey key = KeyUtils.genAESKey();
@@ -110,12 +111,12 @@ public class InitTask1 extends AbstractTask {
                 Logger.warn(e);
                 halt("");
             }
-        } else if (idCount == 1) {
-            idCount = 2;
+        } else if (stepCount == 1) {
+            stepCount = 2;
             // 拿到加密后的验证码
             byte[] bytes = packetBody.getPayload();
             try {
-                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
                 cipher.init(Cipher.DECRYPT_MODE, Cr.getPrivateKey());
                 // 用自己的私钥解密
                 bytes = cipher.doFinal(bytes);
@@ -127,7 +128,7 @@ public class InitTask1 extends AbstractTask {
                 Logger.warn(e);
                 halt(e.toString());
             }
-        } else if (idCount == 2) {
+        } else if (stepCount == 2) {
             done();
         } else {
             halt("");

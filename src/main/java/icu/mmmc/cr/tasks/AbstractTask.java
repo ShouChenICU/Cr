@@ -19,7 +19,11 @@ public abstract class AbstractTask implements Task {
     /**
      * 时间戳
      */
-    protected long timeStamp;
+    protected final long startTime;
+    /**
+     * 更新时间戳
+     */
+    protected long updateTime;
     /**
      * 所属节点
      */
@@ -35,7 +39,7 @@ public abstract class AbstractTask implements Task {
 
     public AbstractTask(ProgressCallback callback) {
         this.callback = Objects.requireNonNullElse(callback, new ProgressAdapter());
-        this.timeStamp = System.currentTimeMillis();
+        this.startTime = System.currentTimeMillis();
     }
 
     /**
@@ -49,16 +53,6 @@ public abstract class AbstractTask implements Task {
     }
 
     /**
-     * 获取时间戳
-     *
-     * @return 时间戳
-     */
-    @Override
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    /**
      * 处理包
      *
      * @param packetBody 包
@@ -69,7 +63,7 @@ public abstract class AbstractTask implements Task {
             halt(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
             return;
         }
-        timeStamp = System.currentTimeMillis();
+        updateTime = System.currentTimeMillis();
     }
 
     /**
@@ -94,5 +88,25 @@ public abstract class AbstractTask implements Task {
             node.removeTask(taskId);
         }
         callback.done();
+    }
+
+    /**
+     * 获取开始时间戳
+     *
+     * @return 开始时间戳
+     */
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /**
+     * 获取最后更新时间
+     *
+     * @return 最后更新时间戳
+     */
+    @Override
+    public long getUpdateTime() {
+        return updateTime;
     }
 }

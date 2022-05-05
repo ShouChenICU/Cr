@@ -34,9 +34,16 @@ public interface Task {
     void done();
 
     /**
-     * 获取时间戳
+     * 获取开始时间戳
      *
-     * @return 时间戳
+     * @return 开始时间戳
      */
-    long getTimeStamp();
+    long getStartTime();
+
+    /**
+     * 获取最后更新时间
+     *
+     * @return 最后更新时间戳
+     */
+    long getUpdateTime();
 }
