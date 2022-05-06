@@ -101,8 +101,8 @@ final class NodeManager {
                         } else {
                             NODE_MAP.put(uuid, this);
                             CharRoomManager.registerNode(this);
-                            finalCallback.done();
                             Logger.info("connected to " + uuid);
+                            finalCallback.done();
                         }
                     }
                 } catch (Exception e) {
@@ -120,19 +120,19 @@ final class NodeManager {
 
             @Override
             public void disconnect() {
-                Logger.debug("disconnect");
+                String uuid = nodeInfo == null ? null : nodeInfo.getUuid();
                 try {
                     super.disconnect();
                 } catch (Exception e) {
                     Logger.error(e);
                 }
                 synchronized (NODE_MAP) {
-                    String uuid = nodeInfo == null ? null : nodeInfo.getUuid();
                     if (uuid != null && NODE_MAP.remove(uuid) != null) {
                         Logger.debug("remove " + nodeInfo.getUuid());
                         CharRoomManager.unregisterNode(uuid);
                     }
                 }
+                Logger.info("disconnect to " + uuid);
             }
         };
         synchronized (CONNECTING_NODE_LIST) {

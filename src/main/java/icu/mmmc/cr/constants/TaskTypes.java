@@ -15,4 +15,8 @@ public class TaskTypes {
      * 初始化
      */
     public static final int INIT = 1;
+    /**
+     * 推送
+     */
+    public static final int PUSH = 2;
 }

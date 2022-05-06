@@ -7,6 +7,7 @@ import icu.mmmc.cr.entities.RoomInfo;
  *
  * @author shouchen
  */
+@SuppressWarnings("unused")
 public interface RoomInfoDao {
     /**
      * 删除房间信息

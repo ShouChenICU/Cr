@@ -3,7 +3,6 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeoutException;
@@ -114,7 +113,9 @@ abstract class NetNode {
                     break;
                 }
                 if (len == -1) {
-                    throw new ClosedChannelException();
+                    Logger.debug("channel closed");
+                    disconnect();
+                    return;
                 }
                 readLength += len;
                 readBuffer.flip();

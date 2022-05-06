@@ -3,6 +3,7 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.tasks.InitTask0;
+import icu.mmmc.cr.tasks.ReceiveTask;
 import icu.mmmc.cr.tasks.Task;
 import icu.mmmc.cr.utils.Logger;
 
@@ -62,7 +63,7 @@ public abstract class Node extends NetNode {
             id = taskIdCount++;
             taskMap.put(id, task);
         }
-        Logger.debug("add task " + id);
+        Logger.debug("add task " + task.getClass().getSimpleName() + " id:" + id);
         task.init(this, id);
     }
 
@@ -162,11 +163,14 @@ public abstract class Node extends NetNode {
             switch (packetBody.getTaskType()) {
                 case TaskTypes.INIT:
                     task = new InitTask0();
-                    addTask(task);
+                    break;
+                case TaskTypes.PUSH:
+                    task = new ReceiveTask();
                     break;
                 default:
                     throw new Exception("unknown task");
             }
+            addTask(task);
         } else {
             task = taskMap.get(packetBody.getDestination());
         }
