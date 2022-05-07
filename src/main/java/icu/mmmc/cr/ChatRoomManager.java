@@ -12,7 +12,7 @@ import java.util.*;
  *
  * @author shouchen
  */
-class CharRoomManager {
+class ChatRoomManager {
     /**
      * 全部聊天室列表
      */
@@ -34,7 +34,7 @@ class CharRoomManager {
      */
     public static void registerNode(Node node) {
         if (node == null || node.getNodeInfo() == null || node.getNodeInfo().getUuid() == null) {
-            Logger.warn("node's uuid is null");
+            Logger.warn("node info broken");
             return;
         }
         String uuid = node.getNodeInfo().getUuid();
@@ -55,6 +55,7 @@ class CharRoomManager {
      */
     public static void unregisterNode(String uuid) {
         if (uuid == null) {
+            Logger.warn("uuid is null");
             return;
         }
         Logger.debug("unregister node " + uuid);
@@ -72,13 +73,14 @@ class CharRoomManager {
      */
     public static void updateRoomInfo(RoomInfo roomInfo) {
         if (roomInfo == null || roomInfo.getNodeUUID() == null || roomInfo.getRoomUUID() == null) {
+            Logger.warn("room info broken");
             return;
         }
         synchronized (CHAT_ROOM_LIST) {
             for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
                 if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
                     chatRoom.updateRoomInfo(roomInfo);
-                    Logger.debug("update room info node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                    Logger.debug("update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                     return;
                 }
             }
@@ -89,6 +91,7 @@ class CharRoomManager {
      * 创建聊天室
      */
     public static ChatRoom createChatRoom() {
+        // TODO: 2022/5/7  
         return null;
     }
 
@@ -96,14 +99,19 @@ class CharRoomManager {
      * 从数据库加载全部聊天室
      */
     public static void loadAll() {
-
+        MANAGE_ROOM_MAP.get("").updateRoomInfo(null);
     }
 
     /**
      * 卸载全部聊天室
      */
     public static void unloadAll() {
-
+        synchronized (CHAT_ROOM_LIST) {
+            CHAT_ROOM_LIST.clear();
+        }
+        synchronized (MANAGE_ROOM_MAP) {
+            MANAGE_ROOM_MAP.clear();
+        }
     }
 
     /**

@@ -100,7 +100,7 @@ final class NodeManager {
                             disconnect();
                         } else {
                             NODE_MAP.put(uuid, this);
-                            CharRoomManager.registerNode(this);
+                            ChatRoomManager.registerNode(this);
                             Logger.info("connected to " + uuid);
                             finalCallback.done();
                         }
@@ -129,7 +129,7 @@ final class NodeManager {
                 synchronized (NODE_MAP) {
                     if (uuid != null && NODE_MAP.remove(uuid) != null) {
                         Logger.debug("remove " + nodeInfo.getUuid());
-                        CharRoomManager.unregisterNode(uuid);
+                        ChatRoomManager.unregisterNode(uuid);
                     }
                 }
                 Logger.info("disconnect to " + uuid);
@@ -166,7 +166,9 @@ final class NodeManager {
      * @return 在线节点列表
      */
     public static List<Node> getOnlineNodeList() {
-        return new ArrayList<>(NODE_MAP.values());
+        synchronized (NODE_MAP) {
+            return new ArrayList<>(NODE_MAP.values());
+        }
     }
 
     /**

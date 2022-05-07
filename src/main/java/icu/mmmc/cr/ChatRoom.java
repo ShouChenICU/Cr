@@ -4,6 +4,7 @@ import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.RoomInfo;
+import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
@@ -36,10 +37,16 @@ public class ChatRoom {
      * 消息列表
      */
     private final List<MessageInfo> messageList;
-
+    /**
+     * 消息接收回调
+     */
     private MsgReceiveCallback msgReceiveCallback;
 
-    public ChatRoom(RoomInfo roomInfo) {
+    public ChatRoom(RoomInfo roomInfo) throws Exception {
+        Objects.requireNonNull(roomInfo);
+        if (roomInfo.getNodeUUID() == null || roomInfo.getRoomUUID() == null) {
+            throw new EntityBrokenException("room info broken");
+        }
         this.roomInfo = roomInfo;
         this.memberMap = new HashMap<>();
         onlineNodeMap = new HashMap<>();
@@ -60,20 +67,12 @@ public class ChatRoom {
      *
      * @param roomInfo 房间信息
      */
-    public void updateRoomInfo(RoomInfo roomInfo) {
+    protected void updateRoomInfo(RoomInfo roomInfo) {
+        if (roomInfo == null) {
+            return;
+        }
         synchronized (this) {
             this.roomInfo = roomInfo;
-        }
-    }
-
-    /**
-     * 获取成员列表
-     *
-     * @return 成员列表
-     */
-    public List<MemberInfo> getMemberList() {
-        synchronized (memberMap) {
-            return new ArrayList<>(memberMap.values());
         }
     }
 
@@ -82,7 +81,7 @@ public class ChatRoom {
      *
      * @param memberInfo 成员信息
      */
-    public void updateMemberInfo(MemberInfo memberInfo) {
+    protected void updateMemberInfo(MemberInfo memberInfo) {
         synchronized (memberMap) {
             memberMap.put(memberInfo.getUserUUID(), memberInfo);
         }
@@ -93,7 +92,7 @@ public class ChatRoom {
      *
      * @param memberInfoList 成员信息列表
      */
-    public void updateMemberList(List<MemberInfo> memberInfoList) {
+    protected void updateMemberList(List<MemberInfo> memberInfoList) {
         synchronized (memberMap) {
             memberMap.clear();
             for (MemberInfo info : memberInfoList) {
@@ -103,24 +102,12 @@ public class ChatRoom {
     }
 
     /**
-     * 是否存在成员
-     *
-     * @param uuid 成员标识码
-     * @return 如果存在该成员则返回true, 否则返回false
-     */
-    public boolean containsMember(String uuid) {
-        synchronized (memberMap) {
-            return memberMap.containsKey(uuid);
-        }
-    }
-
-    /**
      * 添加在线节点
      *
      * @param uuid 节点标识码
      * @param node 节点实体
      */
-    public void putNode(String uuid, Node node) {
+    protected void putNode(String uuid, Node node) {
         synchronized (onlineNodeMap) {
             onlineNodeMap.put(uuid, node);
         }
@@ -131,7 +118,7 @@ public class ChatRoom {
      *
      * @param uuid 节点标识码
      */
-    public void removeNode(String uuid) {
+    protected void removeNode(String uuid) {
         synchronized (onlineNodeMap) {
             onlineNodeMap.remove(uuid);
         }
@@ -142,7 +129,7 @@ public class ChatRoom {
      *
      * @param messageInfo 消息实体
      */
-    public void putMessage(MessageInfo messageInfo) {
+    protected void putMessage(MessageInfo messageInfo) {
         synchronized (messageList) {
             messageList.add(messageInfo);
             messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
@@ -160,6 +147,29 @@ public class ChatRoom {
     }
 
     /**
+     * 获取成员列表
+     *
+     * @return 成员列表
+     */
+    public List<MemberInfo> getMemberList() {
+        synchronized (memberMap) {
+            return new ArrayList<>(memberMap.values());
+        }
+    }
+
+    /**
+     * 是否存在成员
+     *
+     * @param uuid 成员标识码
+     * @return 如果存在该成员则返回true, 否则返回false
+     */
+    public boolean containsMember(String uuid) {
+        synchronized (memberMap) {
+            return memberMap.containsKey(uuid);
+        }
+    }
+
+    /**
      * 获取消息列表
      *
      * @return 消息列表
@@ -170,6 +180,11 @@ public class ChatRoom {
         }
     }
 
+    /**
+     * 设置消息接收回调
+     *
+     * @param msgReceiveCallback 消息接收回调
+     */
     public void setMsgReceiveCallback(MsgReceiveCallback msgReceiveCallback) {
         this.msgReceiveCallback = msgReceiveCallback;
     }

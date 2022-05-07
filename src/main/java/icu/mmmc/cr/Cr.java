@@ -49,6 +49,7 @@ public class Cr {
         Cr.configuration = configuration;
         Logger.setLevel(configuration.getLogLevel());
         WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
+        ChatRoomManager.loadAll();
         if (configuration.isListen()) {
             NetCore.init(configuration.getListenPort());
         } else {
@@ -58,20 +59,20 @@ public class Cr {
     }
 
     /**
-     * 获取节点信息
+     * 获取已加载的节点信息
      *
      * @return 节点信息
      */
-    public static NodeInfo getNodeInfo() {
+    public static synchronized NodeInfo getNodeInfo() {
         return nodeInfo;
     }
 
     /**
-     * 获取RSA私钥
+     * 获取已加载的RSA私钥
      *
      * @return RSA私钥
      */
-    public static PrivateKey getPrivateKey() {
+    public static synchronized PrivateKey getPrivateKey() {
         return privateKey;
     }
 
@@ -81,7 +82,12 @@ public class Cr {
      * @param address  *网络地址
      * @param callback 回调
      */
-    public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+    public static synchronized void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            callback.halt("Cr not initialized");
+            return;
+        }
         NodeManager.connectToNode(address, callback);
     }
 
@@ -90,7 +96,11 @@ public class Cr {
      *
      * @param uuid 节点标识码
      */
-    public static void disconnectToNode(String uuid) {
+    public static synchronized void disconnectToNode(String uuid) {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            return;
+        }
         Node node = NodeManager.getByUUID(uuid);
         if (node != null) {
             try {
@@ -106,7 +116,11 @@ public class Cr {
      *
      * @return 在线节点信息列表
      */
-    public static List<NodeInfo> getOnlineNodeInfoList() {
+    public static synchronized List<NodeInfo> getOnlineNodeInfoList() {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            return new ArrayList<>();
+        }
         List<Node> nodes = NodeManager.getOnlineNodeList();
         List<NodeInfo> nodeInfos = new ArrayList<>();
         for (Node node : nodes) {
@@ -116,12 +130,29 @@ public class Cr {
     }
 
     /**
+     * 获取聊天室列表
+     *
+     * @return 聊天室列表
+     */
+    public static synchronized List<ChatRoom> getChatRoomList() {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            return new ArrayList<>();
+        }
+        return ChatRoomManager.getChatRoomList();
+    }
+
+    /**
      * 判断节点是否在线
      *
      * @param uuid 节点标识码
      * @return 连接状态
      */
     public static boolean nodeIsOnline(String uuid) {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            return false;
+        }
         Node node = NodeManager.getByUUID(uuid);
         return node != null && node.isOnline();
     }
@@ -135,6 +166,7 @@ public class Cr {
         }
         Logger.info("Cr halt");
         NodeManager.disconnectALL();
+        ChatRoomManager.unloadAll();
         NetCore.halt();
         WorkerThreadPool.halt();
         nodeInfo = null;

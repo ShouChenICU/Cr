@@ -1,5 +1,7 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.utils.Logger;
+
 /**
  * 核心配置类
  *
@@ -30,10 +32,14 @@ public class Configuration {
     private int logLevel;
 
     public Configuration() {
+        // 默认启用监听
         isListen = true;
+        // 默认监听端口4224
         listenPort = DEFAULT_PORT;
+        // 工作线程池大小默认设置为CPU线程数
         workerThreadPoolSize = Runtime.getRuntime().availableProcessors();
-        logLevel = 1;
+        // 日志默认设置为INFO级
+        logLevel = Logger.INFO;
     }
 
     /**
