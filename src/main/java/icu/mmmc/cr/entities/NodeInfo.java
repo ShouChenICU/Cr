@@ -1,15 +1,17 @@
 package icu.mmmc.cr.entities;
 
 import icu.mmmc.cr.Serialization;
+import icu.mmmc.cr.exceptions.EntityBrokenException;
+import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.KeyUtils;
 import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 节点信息
@@ -47,6 +49,13 @@ public class NodeInfo implements Serialization {
         publicKey = KeyUtils.getPubKeyByCode((byte[]) object.get("PUB_KEY"));
         attributes = (Map<String, String>) object.get("ATTRIBUTES");
         timestamp = (long) object.get("TIMESTAMP");
+        check();
+    }
+
+    public void check() throws EntityBrokenException {
+        if (uuid == null || publicKey == null || !Objects.equals(uuid, UUID.nameUUIDFromBytes(publicKey.getEncoded()).toString()) || attributes == null) {
+            throw new EntityBrokenException();
+        }
     }
 
     public NodeInfo setUuid(String uuid) {
@@ -119,11 +128,11 @@ public class NodeInfo implements Serialization {
      */
     @Override
     public byte[] serialize() {
-        BSONObject object = new BasicBSONObject();
-        object.put("UUID", uuid);
-        object.put("PUB_KEY", publicKey.getEncoded());
-        object.put("ATTRIBUTES", attributes);
-        object.put("TIMESTAMP", timestamp);
-        return BsonUtils.serialize(object);
+        return new BsonObject()
+                .set("UUID", uuid)
+                .set("PUB_KEY", publicKey.getEncoded())
+                .set("ATTRIBUTES", attributes)
+                .set("TIMESTAMP", timestamp)
+                .serialize();
     }
 }

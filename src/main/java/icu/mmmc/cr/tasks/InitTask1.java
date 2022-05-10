@@ -10,11 +10,9 @@ import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.NodeInfoDao;
 import icu.mmmc.cr.entities.NodeInfo;
-import icu.mmmc.cr.utils.BsonUtils;
+import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.KeyUtils;
 import icu.mmmc.cr.utils.Logger;
-import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -139,18 +137,26 @@ public class InitTask1 extends AbstractTask {
     public void init(Node node, int taskId) {
         this.node = node;
         this.taskId = taskId;
-        BSONObject object = new BasicBSONObject();
         Random random = new Random();
         byte[] b = new byte[random.nextInt(127) + 1];
         random.nextBytes(b);
-        object.put("", b);
-        object.put("PROTOCOL", Version.PROTOCOL_VERSION);
-        object.put("PUB_KEY", Cr.getNodeInfo().getPublicKey().getEncoded());
-        node.postPacket(new PacketBody()
-                .setSource(taskId)
-                .setDestination(0)
-                .setTaskType(TaskTypes.INIT)
-                .setPayload(BsonUtils.serialize(object)));
+        node.postPacket(
+                new PacketBody()
+                        .setSource(taskId)
+                        .setDestination(0)
+                        .setTaskType(TaskTypes.INIT)
+                        .setPayload(
+                                new BsonObject()
+                                        .set("", b)
+                                        .set("PROTOCOL", Version.PROTOCOL_VERSION)
+                                        .set("PUB_KEY",
+                                                Cr.getNodeInfo()
+                                                        .getPublicKey()
+                                                        .getEncoded()
+                                        )
+                                        .serialize()
+                        )
+        );
     }
 
     @Override

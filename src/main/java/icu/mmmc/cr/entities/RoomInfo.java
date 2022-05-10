@@ -1,9 +1,10 @@
 package icu.mmmc.cr.entities;
 
 import icu.mmmc.cr.Serialization;
+import icu.mmmc.cr.exceptions.EntityBrokenException;
+import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
 import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 
 import java.util.Objects;
 
@@ -34,12 +35,19 @@ public class RoomInfo implements Serialization {
     public RoomInfo() {
     }
 
-    public RoomInfo(byte[] dat) {
+    public RoomInfo(byte[] dat) throws Exception {
         BSONObject object = BsonUtils.deserialize(dat);
         nodeUUID = (String) object.get("NODE_UUID");
         roomUUID = (String) object.get("ROOM_UUID");
         title = (String) object.get("TITLE");
         updateTime = (long) object.get("UPDATE_TIME");
+        check();
+    }
+
+    public void check() throws EntityBrokenException {
+        if (nodeUUID == null || roomUUID == null | title == null) {
+            throw new EntityBrokenException();
+        }
     }
 
     public String getNodeUUID() {
@@ -112,11 +120,11 @@ public class RoomInfo implements Serialization {
      */
     @Override
     public byte[] serialize() {
-        BSONObject object = new BasicBSONObject();
-        object.put("NODE_UUID", nodeUUID);
-        object.put("ROOM_UUID", roomUUID);
-        object.put("TITLE", title);
-        object.put("UPDATE_TIME", updateTime);
-        return BsonUtils.serialize(object);
+        return new BsonObject()
+                .set("NODE_UUID", nodeUUID)
+                .set("ROOM_UUID", roomUUID)
+                .set("TITLE", title)
+                .set("UPDATE_TIME", updateTime)
+                .serialize();
     }
 }
