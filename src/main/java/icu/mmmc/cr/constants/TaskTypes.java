@@ -12,6 +12,10 @@ public class TaskTypes {
      */
     public static final int ERROR = -1;
     /**
+     * 心跳
+     */
+    public static final int HEART = 0;
+    /**
      * 确认
      */
     public static final int ACK = 1;

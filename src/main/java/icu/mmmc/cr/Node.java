@@ -25,6 +25,7 @@ public abstract class Node extends NetNode {
     private final Encryptor encryptor;
     private final ConcurrentHashMap<Integer, Task> taskMap;
     protected NodeInfo nodeInfo;
+    protected long heartBeat;
     private int taskIdCount;
     private int sendPacketCount;
     private int receivePacketCount;
@@ -35,6 +36,7 @@ public abstract class Node extends NetNode {
         waitSendPacketQueue = new LinkedList<>();
         encryptor = new Encryptor();
         taskMap = new ConcurrentHashMap<>();
+        heartBeat = System.currentTimeMillis();
         taskIdCount = 1;
         sendPacketCount = 0;
         receivePacketCount = 0;
@@ -127,6 +129,7 @@ public abstract class Node extends NetNode {
             try {
                 byte[] dat = encryptor.encrypt(packetBody.serialize());
                 doWrite(dat);
+                heartBeat = System.currentTimeMillis();
             } catch (Exception e) {
                 Logger.warn(e);
                 try {
@@ -155,12 +158,15 @@ public abstract class Node extends NetNode {
      */
     @Override
     protected void dataHandler(byte[] data) throws Exception {
-        receivePacketCount++;
+        heartBeat = System.currentTimeMillis();
         Logger.debug("data handler, length = " + data.length);
         PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
+        receivePacketCount++;
         Task task;
         if (packetBody.getDestination() == 0) {
             switch (packetBody.getTaskType()) {
+                case TaskTypes.HEART:
+                    return;
                 case TaskTypes.INIT:
                     task = new InitTask0();
                     break;
@@ -203,6 +209,10 @@ public abstract class Node extends NetNode {
         } catch (Exception ex) {
             Logger.warn(ex);
         }
+    }
+
+    public long getHeartBeat() {
+        return heartBeat;
     }
 
     /**

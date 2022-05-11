@@ -2,6 +2,7 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
+import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.tasks.InitTask1;
 import icu.mmmc.cr.utils.Logger;
 
@@ -22,7 +23,8 @@ import java.util.concurrent.TimeUnit;
  * @author shouchen
  */
 final class NodeManager {
-    private static final int CONNECT_TIMEOUT = 30;
+    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
+    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(10);
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
@@ -101,6 +103,7 @@ final class NodeManager {
                         } else {
                             NODE_MAP.put(uuid, this);
                             ChatRoomManager.registerNode(this);
+                            heartTest(this);
                             Logger.info("connected to " + uuid);
                             finalCallback.done();
                         }
@@ -143,7 +146,7 @@ final class NodeManager {
                 Logger.debug("node init time out");
                 node.initFail();
             }
-        }, CONNECT_TIMEOUT, TimeUnit.SECONDS);
+        }, CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
         key.attach(node);
         key.interestOps(SelectionKey.OP_READ);
         key.selector().wakeup();
@@ -192,5 +195,29 @@ final class NodeManager {
                 Logger.warn(e);
             }
         }
+    }
+
+    /**
+     * 心跳测试
+     *
+     * @param node 节点
+     */
+    private static void heartTest(Node node) {
+        if (node == null || !node.isConnect()) {
+            return;
+        }
+        long interval = System.currentTimeMillis() - node.getHeartBeat();
+        if (interval > CONNECT_TIMEOUT) {
+            try {
+                node.disconnect();
+            } catch (Exception e) {
+                Logger.warn(e);
+            }
+        } else if (interval > HEART_TEST_CYCLE) {
+            node.postPacket(new PacketBody()
+                    .setDestination(0)
+                    .setTaskType(TaskTypes.HEART));
+        }
+        TIMER_EXECUTOR.schedule(() -> heartTest(node), HEART_TEST_CYCLE, TimeUnit.MILLISECONDS);
     }
 }
