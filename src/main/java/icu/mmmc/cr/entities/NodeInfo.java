@@ -5,8 +5,10 @@ import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.KeyUtils;
+import icu.mmmc.cr.utils.SignUtils;
 import org.bson.BSONObject;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +39,10 @@ public class NodeInfo implements Serialization {
      * 时间戳
      */
     private long timestamp;
+    /**
+     * 签名
+     */
+    private byte[] signature;
 
     public NodeInfo() {
         attributes = new HashMap<>();
@@ -49,12 +55,54 @@ public class NodeInfo implements Serialization {
         publicKey = KeyUtils.getPubKeyByCode((byte[]) object.get("PUB_KEY"));
         attributes = (Map<String, String>) object.get("ATTRIBUTES");
         timestamp = (long) object.get("TIMESTAMP");
+        signature = (byte[]) object.get("SIGNATURE");
         check();
     }
 
-    public void check() throws EntityBrokenException {
-        if (uuid == null || publicKey == null || !Objects.equals(uuid, UUID.nameUUIDFromBytes(publicKey.getEncoded()).toString()) || attributes == null) {
+    /**
+     * 用私钥签名节点的基本信息
+     * 签名的数据包括属性集和时间戳
+     *
+     * @param privateKey 私钥
+     * @throws Exception 签名异常
+     */
+    public void sign(PrivateKey privateKey) throws Exception {
+        signature = SignUtils.sign(
+                privateKey,
+                new BsonObject()
+                        .set("ATTRIBUTES", attributes)
+                        .set("TIMESTAMP", timestamp)
+                        .serialize()
+        );
+    }
+
+    /**
+     * 验证节点信息
+     * 1、验证基本信息是否完整
+     * 2、验证签名是否有效
+     *
+     * @throws Exception 验证不通过
+     */
+    public void check() throws Exception {
+        if (uuid == null
+                || publicKey == null
+                || !Objects.equals(uuid, UUID.nameUUIDFromBytes(publicKey.getEncoded()).toString())
+                || attributes == null
+        ) {
             throw new EntityBrokenException();
+        } else if (signature == null) {
+            throw new EntityBrokenException("Signature is empty");
+        } else if (
+                !SignUtils.verify(
+                        publicKey,
+                        new BsonObject()
+                                .set("ATTRIBUTES", attributes)
+                                .set("TIMESTAMP", timestamp)
+                                .serialize(),
+                        signature
+                )
+        ) {
+            throw new EntityBrokenException("Signature verification failed");
         }
     }
 
@@ -94,6 +142,15 @@ public class NodeInfo implements Serialization {
         return this;
     }
 
+    public byte[] getSignature() {
+        return signature;
+    }
+
+    public NodeInfo setSignature(byte[] signature) {
+        this.signature = signature;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -115,9 +172,10 @@ public class NodeInfo implements Serialization {
     public String toString() {
         return "NodeInfo{" +
                 "uuid='" + uuid + '\'' +
-                ", publicKey=" + publicKey +
+                ", publicKey=" + (publicKey == null ? "null" : "***") +
                 ", attributes=" + attributes +
                 ", timestamp=" + timestamp +
+                ", signature=" + (signature == null ? "null" : "***") +
                 '}';
     }
 
@@ -133,6 +191,7 @@ public class NodeInfo implements Serialization {
                 .set("PUB_KEY", publicKey.getEncoded())
                 .set("ATTRIBUTES", attributes)
                 .set("TIMESTAMP", timestamp)
+                .set("SIGNATURE", signature)
                 .serialize();
     }
 }

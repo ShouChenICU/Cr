@@ -138,7 +138,7 @@ public class InitTask1 extends AbstractTask {
         this.node = node;
         this.taskId = taskId;
         Random random = new Random();
-        byte[] b = new byte[random.nextInt(127) + 1];
+        byte[] b = new byte[random.nextInt(256) + 1];
         random.nextBytes(b);
         node.postPacket(
                 new PacketBody()
