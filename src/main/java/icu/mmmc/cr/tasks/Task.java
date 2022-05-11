@@ -19,7 +19,7 @@ public interface Task {
      *
      * @param packetBody 包
      */
-    void handlePacket(PacketBody packetBody);
+    void handlePacket(PacketBody packetBody) throws Exception;
 
     /**
      * 终止

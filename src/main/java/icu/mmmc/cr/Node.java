@@ -177,12 +177,7 @@ public abstract class Node extends NetNode {
         if (task == null) {
             throw new Exception("task not found");
         }
-        Task finalTask = task;
-        WorkerThreadPool.execute(() -> {
-            synchronized (finalTask) {
-                finalTask.handlePacket(packetBody);
-            }
-        });
+        task.handlePacket(packetBody);
     }
 
     @Override

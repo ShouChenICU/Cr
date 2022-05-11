@@ -12,11 +12,15 @@ public class TaskTypes {
      */
     public static final int ERROR = -1;
     /**
+     * 确认
+     */
+    public static final int ACK = 1;
+    /**
      * 初始化
      */
-    public static final int INIT = 1;
+    public static final int INIT = 2;
     /**
      * 推送
      */
-    public static final int PUSH = 2;
+    public static final int PUSH = 3;
 }

@@ -5,6 +5,7 @@ package icu.mmmc.cr.exceptions;
  *
  * @author shouchen
  */
+@SuppressWarnings("unused")
 public class EntityBrokenException extends Exception {
     public EntityBrokenException() {
         super();

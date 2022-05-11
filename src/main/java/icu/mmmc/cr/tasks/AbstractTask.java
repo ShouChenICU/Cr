@@ -58,7 +58,7 @@ public abstract class AbstractTask implements Task {
      * @param packetBody 包
      */
     @Override
-    public void handlePacket(PacketBody packetBody) {
+    public void handlePacket(PacketBody packetBody) throws Exception {
         if (packetBody.getTaskType() == TaskTypes.ERROR) {
             halt(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
             return;

@@ -45,7 +45,7 @@ public class InitTask0 extends AbstractTask {
      * @param packetBody 包
      */
     @Override
-    public void handlePacket(PacketBody packetBody) {
+    public void handlePacket(PacketBody packetBody) throws Exception {
         super.handlePacket(packetBody);
         if (stepCount == 0) {
             stepCount = 1;
