@@ -1,9 +1,11 @@
 package icu.mmmc.cr.tasks;
 
+import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.NodeInfo;
+import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.Logger;
 import org.bson.BSONObject;
@@ -96,8 +98,9 @@ public class ReceiveTask extends TransmitTask {
         NodeManager.updateNodeInfo(nodeInfo);
     }
 
-    private void receiveRoomInfo() {
-
+    private void receiveRoomInfo() throws Exception {
+        RoomInfo roomInfo = new RoomInfo(data);
+        ChatRoomManager.updateRoomInfo(roomInfo);
     }
 
     private void receiveMemberInfo() {

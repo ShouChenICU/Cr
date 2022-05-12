@@ -1,5 +1,7 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.database.DaoManager;
+import icu.mmmc.cr.database.interfaces.RoomInfoDao;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.Logger;
 
@@ -12,7 +14,7 @@ import java.util.*;
  *
  * @author shouchen
  */
-class ChatRoomManager {
+public final class ChatRoomManager {
     /**
      * 全部聊天室列表
      */
@@ -32,7 +34,7 @@ class ChatRoomManager {
      *
      * @param node 节点
      */
-    public static void registerNode(Node node) {
+    static void registerNode(Node node) {
         if (node == null || node.getNodeInfo() == null || node.getNodeInfo().getUuid() == null) {
             Logger.warn("node info broken");
             return;
@@ -53,7 +55,7 @@ class ChatRoomManager {
      *
      * @param uuid 节点标识码
      */
-    public static void unregisterNode(String uuid) {
+    static void unregisterNode(String uuid) {
         if (uuid == null) {
             Logger.warn("uuid is null");
             return;
@@ -76,22 +78,28 @@ class ChatRoomManager {
             roomInfo.check();
         } catch (Exception e) {
             Logger.warn(e);
+            return;
         }
         synchronized (CHAT_ROOM_LIST) {
             for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
                 if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
                     chatRoom.updateRoomInfo(roomInfo);
                     Logger.debug("update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
-                    return;
+                    break;
                 }
             }
         }
+        RoomInfoDao dao = DaoManager.getRoomInfoDao();
+        if (dao != null) {
+            dao.updateRoomInfo(roomInfo);
+        }
+        Logger.debug("update room info\n" + roomInfo);
     }
 
     /**
      * 创建聊天室
      */
-    public static ChatRoom createChatRoom() {
+    static ChatRoom createChatRoom() {
         // TODO: 2022/5/7  
         return null;
     }
@@ -99,13 +107,13 @@ class ChatRoomManager {
     /**
      * 从数据库加载全部聊天室
      */
-    public static void loadAll() {
+    static void loadAll() {
     }
 
     /**
      * 卸载全部聊天室
      */
-    public static void unloadAll() {
+    static void unloadAll() {
         synchronized (CHAT_ROOM_LIST) {
             CHAT_ROOM_LIST.clear();
         }
@@ -119,7 +127,7 @@ class ChatRoomManager {
      *
      * @return 聊天室列表
      */
-    public static List<ChatRoom> getChatRoomList() {
+    static List<ChatRoom> getChatRoomList() {
         synchronized (CHAT_ROOM_LIST) {
             return Collections.unmodifiableList(CHAT_ROOM_LIST);
         }
