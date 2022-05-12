@@ -55,7 +55,7 @@ public class PushTask extends TransmitTask {
             node.postPacket(
                     new PacketBody()
                             .setSource(taskId)
-                            .setDestination(packetBody.getDestination())
+                            .setDestination(packetBody.getSource())
                             .setPayload(buf)
             );
         }

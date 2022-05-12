@@ -90,6 +90,7 @@ public class InitTask0 extends AbstractTask {
                     } else {
                         // 询问用户是否允许连接
                         if (Cr.CallBack.newConnectionCallback.newConnection(uuid, true)) {
+                            // 生成一个临时节点信息
                             nodeInfo = new NodeInfo()
                                     .setUuid(uuid)
                                     .setPublicKey(publicKey);

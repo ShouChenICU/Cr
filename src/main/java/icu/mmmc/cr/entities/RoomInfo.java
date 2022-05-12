@@ -46,7 +46,7 @@ public class RoomInfo implements Serialization {
 
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null | title == null) {
-            throw new EntityBrokenException();
+            throw new EntityBrokenException("Room info broken");
         }
     }
 

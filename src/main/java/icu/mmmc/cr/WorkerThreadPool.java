@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("unused")
 public class WorkerThreadPool {
     private static final int MAX_WORK_COUNT = 4096;
-    private static final String THREAD_NAME = "worker-thread";
+    private static final String THREAD_NAME = "Worker-thread";
     private static ThreadPoolExecutor executor = null;
     private static volatile int threadNum = 0;
 
@@ -61,7 +61,7 @@ public class WorkerThreadPool {
      * 关闭任务线程池
      */
     public static void halt() {
-        Logger.info("stop");
+        Logger.info("Stop");
         try {
             executor.shutdown();
             if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {

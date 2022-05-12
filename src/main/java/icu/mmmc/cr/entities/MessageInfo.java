@@ -61,7 +61,7 @@ public class MessageInfo implements Serialization {
 
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null) {
-            throw new EntityBrokenException();
+            throw new EntityBrokenException("Message info broken");
         }
     }
 

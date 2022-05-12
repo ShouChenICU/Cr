@@ -45,6 +45,7 @@ class NetCore {
             loopThread.interrupt();
         }
         loopThread = new Thread(NetCore::loop);
+        loopThread.setName("NetLoop-thread");
         loopThread.start();
         Logger.info("init done");
     }

@@ -46,7 +46,7 @@ public class MemberInfo implements Serialization {
 
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null || userUUID == null) {
-            throw new EntityBrokenException();
+            throw new EntityBrokenException("Member info broken");
         }
     }
 

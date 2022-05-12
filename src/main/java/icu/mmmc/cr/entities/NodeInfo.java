@@ -66,14 +66,19 @@ public class NodeInfo implements Serialization {
      * @param privateKey 私钥
      * @throws Exception 签名异常
      */
-    public void sign(PrivateKey privateKey) throws Exception {
-        signature = SignUtils.sign(
-                privateKey,
-                new BsonObject()
-                        .set("ATTRIBUTES", attributes)
-                        .set("TIMESTAMP", timestamp)
-                        .serialize()
-        );
+    public NodeInfo sign(PrivateKey privateKey) throws Exception {
+        synchronized (this) {
+            long t = System.currentTimeMillis();
+            signature = SignUtils.sign(
+                    privateKey,
+                    new BsonObject()
+                            .set("ATTRIBUTES", attributes)
+                            .set("TIMESTAMP", t)
+                            .serialize()
+            );
+            timestamp = t;
+            return this;
+        }
     }
 
     /**
@@ -87,9 +92,8 @@ public class NodeInfo implements Serialization {
         if (uuid == null
                 || publicKey == null
                 || !Objects.equals(uuid, UUID.nameUUIDFromBytes(publicKey.getEncoded()).toString())
-                || attributes == null
-        ) {
-            throw new EntityBrokenException();
+                || attributes == null) {
+            throw new EntityBrokenException("Node info broken");
         } else if (signature == null) {
             throw new EntityBrokenException("Signature is empty");
         } else if (
@@ -103,6 +107,8 @@ public class NodeInfo implements Serialization {
                 )
         ) {
             throw new EntityBrokenException("Signature verification failed");
+        } else if (timestamp > System.currentTimeMillis()) {
+            throw new EntityBrokenException("Timestamp is beyond current time");
         }
     }
 

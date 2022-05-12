@@ -72,9 +72,10 @@ class ChatRoomManager {
      * @param roomInfo 房间信息
      */
     public static void updateRoomInfo(RoomInfo roomInfo) {
-        if (roomInfo == null || roomInfo.getNodeUUID() == null || roomInfo.getRoomUUID() == null) {
-            Logger.warn("room info broken");
-            return;
+        try {
+            roomInfo.check();
+        } catch (Exception e) {
+            Logger.warn(e);
         }
         synchronized (CHAT_ROOM_LIST) {
             for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
@@ -99,7 +100,6 @@ class ChatRoomManager {
      * 从数据库加载全部聊天室
      */
     public static void loadAll() {
-        MANAGE_ROOM_MAP.get("").updateRoomInfo(null);
     }
 
     /**

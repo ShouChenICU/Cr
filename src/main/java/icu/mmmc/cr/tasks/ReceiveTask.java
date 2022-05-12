@@ -1,11 +1,15 @@
 package icu.mmmc.cr.tasks;
 
+import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.constants.TaskTypes;
+import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.utils.BsonUtils;
+import icu.mmmc.cr.utils.Logger;
 import org.bson.BSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * 接收任务
@@ -53,7 +57,7 @@ public class ReceiveTask extends TransmitTask {
             System.arraycopy(buf, 0, data, processedLength, buf.length);
             processedLength += buf.length;
             if (processedLength == data.length) {
-                done();
+                handle();
             }
         }
         node.postPacket(
@@ -64,18 +68,43 @@ public class ReceiveTask extends TransmitTask {
         );
     }
 
-    @Override
-    public void done() {
-        switch (entityType) {
-            case ENTITY_NODE_INFO:
-                break;
-            case ENTITY_ROOM_INFO:
-                break;
-            case ENTITY_MEMBER_INFO:
-                break;
-            case ENTITY_MESSAGE_INFO:
-                break;
+    public void handle() {
+        try {
+            switch (entityType) {
+                case ENTITY_NODE_INFO:
+                    receiveNodeInfo();
+                    break;
+                case ENTITY_ROOM_INFO:
+                    receiveRoomInfo();
+                    break;
+                case ENTITY_MEMBER_INFO:
+                    receiveMemberInfo();
+                    break;
+                case ENTITY_MESSAGE_INFO:
+                    receiveMessageInfo();
+                    break;
+            }
+            done();
+        } catch (Exception e) {
+            Logger.warn(e);
+            halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
         }
-        super.done();
+    }
+
+    private void receiveNodeInfo() throws Exception {
+        NodeInfo nodeInfo = new NodeInfo(data);
+        NodeManager.updateNodeInfo(nodeInfo);
+    }
+
+    private void receiveRoomInfo() {
+
+    }
+
+    private void receiveMemberInfo() {
+
+    }
+
+    private void receiveMessageInfo() {
+
     }
 }

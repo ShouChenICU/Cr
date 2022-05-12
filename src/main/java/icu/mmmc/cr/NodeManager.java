@@ -3,7 +3,11 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.TaskTypes;
+import icu.mmmc.cr.database.DaoManager;
+import icu.mmmc.cr.database.interfaces.NodeInfoDao;
+import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.tasks.InitTask1;
+import icu.mmmc.cr.tasks.PushTask;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
@@ -22,9 +26,22 @@ import java.util.concurrent.TimeUnit;
  *
  * @author shouchen
  */
-final class NodeManager {
-    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
-    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(10);
+public final class NodeManager {
+    /**
+     * 连接超时时长 29s
+     * 超过此时间即认为连接断开
+     */
+    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(29);
+    /**
+     * 心跳检测周期 17s
+     * 每17s检测一次
+     */
+    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(17);
+    /**
+     * 心跳时间 7s
+     * 超过这个时间无心跳则测试一次连接
+     */
+    private static final long HEART_BEAT_TIME = TimeUnit.SECONDS.toMillis(7);
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
@@ -45,19 +62,19 @@ final class NodeManager {
      * @param address  *网络地址
      * @param callback 回调
      */
-    public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+    static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
         if (callback == null) {
             callback = new ProgressAdapter();
         }
         SocketChannel channel = null;
         SelectionKey key;
         try {
-            String msg = "start connect";
+            String msg = "Start connect";
             Logger.debug(msg);
             callback.start();
             channel = SocketChannel.open(address);
-            msg = "connecting to " + channel.getRemoteAddress();
-            Logger.debug(msg);
+            msg = "Connecting to " + channel.getRemoteAddress();
+            Logger.info(msg);
             callback.update(0, msg);
             channel.configureBlocking(false);
             key = NetCore.register(channel);
@@ -81,7 +98,7 @@ final class NodeManager {
      *
      * @param key 网络键
      */
-    public static Node acceptNode(SelectionKey key, ProgressCallback callback) throws Exception {
+    static Node acceptNode(SelectionKey key, ProgressCallback callback) throws Exception {
         if (callback == null) {
             callback = new ProgressAdapter();
         }
@@ -96,7 +113,7 @@ final class NodeManager {
                     String uuid = nodeInfo.getUuid();
                     synchronized (NODE_MAP) {
                         if (NODE_MAP.get(uuid) != null || Objects.equals(Cr.getNodeInfo().getUuid(), uuid)) {
-                            String s = "connect repeatedly " + uuid;
+                            String s = "Connect repeatedly " + uuid;
                             finalCallback.halt(s);
                             Logger.debug(s);
                             disconnect();
@@ -104,8 +121,10 @@ final class NodeManager {
                             NODE_MAP.put(uuid, this);
                             ChatRoomManager.registerNode(this);
                             heartTest(this);
-                            Logger.info("connected to " + uuid);
+                            Logger.info("Connected to " + uuid);
                             finalCallback.done();
+                            // 连接成功后给对方推送自己的完整信息
+                            addTask(new PushTask(Cr.getNodeInfo(), null));
                         }
                     }
                 } catch (Exception e) {
@@ -131,11 +150,11 @@ final class NodeManager {
                 }
                 synchronized (NODE_MAP) {
                     if (uuid != null && NODE_MAP.remove(uuid) != null) {
-                        Logger.debug("remove " + nodeInfo.getUuid());
+                        Logger.debug("Remove " + nodeInfo.getUuid());
                         ChatRoomManager.unregisterNode(uuid);
                     }
                 }
-                Logger.info("disconnect to " + uuid);
+                Logger.info("Disconnect to " + uuid);
             }
         };
         synchronized (CONNECTING_NODE_LIST) {
@@ -143,7 +162,7 @@ final class NodeManager {
         }
         TIMER_EXECUTOR.schedule(() -> {
             if (!node.isOnline()) {
-                Logger.debug("node init time out");
+                Logger.debug("Node init time out");
                 node.initFail();
             }
         }, CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -159,7 +178,7 @@ final class NodeManager {
      * @param uuid 唯一标识码
      * @return 节点
      */
-    public static Node getByUUID(String uuid) {
+    static Node getByUUID(String uuid) {
         return NODE_MAP.get(uuid);
     }
 
@@ -168,7 +187,7 @@ final class NodeManager {
      *
      * @return 在线节点列表
      */
-    public static List<Node> getOnlineNodeList() {
+    static List<Node> getOnlineNodeList() {
         synchronized (NODE_MAP) {
             return new ArrayList<>(NODE_MAP.values());
         }
@@ -177,7 +196,7 @@ final class NodeManager {
     /**
      * 断开所有连接
      */
-    public static void disconnectALL() {
+    static void disconnectALL() {
         synchronized (CONNECTING_NODE_LIST) {
             for (Node node : CONNECTING_NODE_LIST) {
                 try {
@@ -202,7 +221,7 @@ final class NodeManager {
      *
      * @param node 节点
      */
-    private static void heartTest(Node node) {
+    static void heartTest(Node node) {
         if (node == null || !node.isConnect()) {
             return;
         }
@@ -213,11 +232,53 @@ final class NodeManager {
             } catch (Exception e) {
                 Logger.warn(e);
             }
-        } else if (interval > HEART_TEST_CYCLE) {
+        } else if (interval > HEART_BEAT_TIME) {
             node.postPacket(new PacketBody()
                     .setDestination(0)
                     .setTaskType(TaskTypes.HEART));
         }
         TIMER_EXECUTOR.schedule(() -> heartTest(node), HEART_TEST_CYCLE, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 更新节点信息
+     *
+     * @param nodeInfo 节点信息
+     */
+    public static void updateNodeInfo(NodeInfo nodeInfo) {
+        Logger.debug("Update node info");
+        if (nodeInfo == null) {
+            Logger.warn("Node info is null");
+            return;
+        }
+        try {
+            nodeInfo.check();
+        } catch (Exception e) {
+            Logger.warn(e);
+            return;
+        }
+        String uuid = nodeInfo.getUuid();
+        NodeInfoDao dao = DaoManager.getNodeInfoDao();
+        if (dao != null) {
+            // 获取数据库保存的该节点信息
+            NodeInfo info = dao.getByUUID(uuid);
+            if (info != null) {
+                try {
+                    info.check();
+                    // 如果保存的数据比较新，就不覆盖了
+                    if (info.getTimestamp() >= nodeInfo.getTimestamp()) {
+                        Logger.debug("Node info is old");
+                        return;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            dao.updateNodeInfo(nodeInfo);
+        }
+        Node node = NODE_MAP.get(uuid);
+        if (node != null) {
+            node.setNodeInfo(nodeInfo);
+        }
+        Logger.debug("Update node info complete, uuid = " + uuid);
     }
 }

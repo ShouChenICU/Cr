@@ -11,8 +11,6 @@ import java.net.InetSocketAddress;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Cr核心主类
@@ -37,12 +35,12 @@ public class Cr {
         Logger.info("Cr init");
         Logger.info("Version: " + Version.VERSION_STRING);
         configuration.check();
-        if (nodeInfo == null || privateKey == null || nodeInfo.getPublicKey() == null) {
+        if (nodeInfo == null || privateKey == null) {
             throw new IdentityException("Corrupted identity information");
-        } else if (!Objects.equals(nodeInfo.getUuid(), UUID.nameUUIDFromBytes(nodeInfo.getPublicKey().getEncoded()).toString())) {
-            throw new IdentityException("UUID error");
-        } else if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
-            throw new Exception("key pair mismatch");
+        }
+        nodeInfo.check();
+        if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
+            throw new Exception("Key pair mismatch");
         }
         Cr.nodeInfo = nodeInfo;
         Cr.privateKey = privateKey;
