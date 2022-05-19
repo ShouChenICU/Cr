@@ -139,7 +139,20 @@ public class Cr {
             Logger.warn("Cr not initialized");
             return new ArrayList<>();
         }
-        return ChatRoomManager.getChatRoomList();
+        return ChatRoomManager.getAllChatRoomList();
+    }
+
+    /**
+     * 获取被管理的房间列表
+     *
+     * @return 房间列表
+     */
+    public static synchronized List<ChatRoom> getManageRoomList() {
+        if (nodeInfo == null) {
+            Logger.warn("Cr not initialized");
+            return new ArrayList<>();
+        }
+        return ChatRoomManager.getManageRoomList();
     }
 
     /**

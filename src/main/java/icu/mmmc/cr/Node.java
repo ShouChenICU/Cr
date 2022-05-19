@@ -59,11 +59,15 @@ public abstract class Node extends NetNode {
      *
      * @param task 任务
      */
-    public void addTask(Task task) {
+    protected void addTask(Task task) {
         int id;
         synchronized (taskMap) {
             id = taskIdCount++;
             taskMap.put(id, task);
+            // 防止溢出
+            if (taskIdCount == Integer.MAX_VALUE) {
+                taskIdCount = 1;
+            }
         }
         Logger.debug("add task " + task.getClass().getSimpleName() + " id:" + id);
         task.init(this, id);
@@ -85,7 +89,7 @@ public abstract class Node extends NetNode {
      *
      * @return 已连接且身份有效则返回true
      */
-    public boolean isOnline() {
+    protected boolean isOnline() {
         return isConnect() && nodeInfo != null && nodeInfo.getUuid() != null;
     }
 
@@ -107,7 +111,7 @@ public abstract class Node extends NetNode {
     /**
      * 发送包
      */
-    public void doPost() {
+    protected void doPost() {
         synchronized (waitSendPacketQueue) {
             if (postLock.isLocked()) {
                 return;

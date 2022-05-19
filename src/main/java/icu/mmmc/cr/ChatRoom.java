@@ -4,7 +4,6 @@ import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.RoomInfo;
-import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
 
@@ -19,7 +18,7 @@ public class ChatRoom {
     /**
      * 缓存的消息列表长度
      */
-    private static final int MSG_LIST_BUF_SIZE = 20;
+    public static final int MSG_LIST_BUF_SIZE = 20;
     /**
      * 房间信息
      */
@@ -138,11 +137,25 @@ public class ChatRoom {
                 messageList.remove(0);
             }
             if (msgReceiveCallback != null) {
-                try {
-                    msgReceiveCallback.receiveMsg(messageInfo);
-                } catch (Exception e) {
-                    Logger.warn(e);
-                }
+                msgReceiveCallback.receiveMsg(messageInfo);
+            }
+        }
+    }
+
+    /**
+     * 添加全部消息
+     *
+     * @param messageInfos 消息列表
+     */
+    protected void putMessages(List<MessageInfo> messageInfos) {
+        synchronized (messageList) {
+            messageList.addAll(messageInfos);
+            messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
+            while (messageList.size() > MSG_LIST_BUF_SIZE) {
+                messageList.remove(0);
+            }
+            if (msgReceiveCallback != null) {
+                msgReceiveCallback.receiveMsg(messageList.get(messageList.size() - 1));
             }
         }
     }

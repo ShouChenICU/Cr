@@ -7,7 +7,6 @@ import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.database.DaoManager;
-import icu.mmmc.cr.database.interfaces.NodeInfoDao;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.KeyUtils;
@@ -78,12 +77,7 @@ public class InitTask0 extends AbstractTask {
                 // 解析uuid
                 String uuid = UUID.nameUUIDFromBytes(pubKeyCode).toString();
                 // 尝试从数据库获取节点信息
-                NodeInfoDao dao = DaoManager.getNodeInfoDao();
-                if (dao == null) {
-                    nodeInfo = null;
-                } else {
-                    nodeInfo = dao.getByUUID(uuid);
-                }
+                nodeInfo = DaoManager.getNodeInfoDao().getByUUID(uuid);
                 NewConnectionCallback newConnectionCallback = Cr.CallBack.newConnectionCallback;
                 if (nodeInfo == null) {
                     // 找不到该节点

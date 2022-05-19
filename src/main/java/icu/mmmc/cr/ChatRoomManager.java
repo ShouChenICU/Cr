@@ -1,7 +1,9 @@
 package icu.mmmc.cr;
 
 import icu.mmmc.cr.database.DaoManager;
+import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.database.interfaces.RoomInfoDao;
+import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.Logger;
 
@@ -116,14 +118,34 @@ public final class ChatRoomManager {
      * 仅在初始化时调用
      */
     static synchronized void loadAll() {
-        RoomInfoDao dao = DaoManager.getRoomInfoDao();
-        if (dao == null) {
+        NodeInfo nodeInfo = Cr.getNodeInfo();
+        MemberDao memberDao = DaoManager.getMemberDao();
+        if (nodeInfo == null) {
+            Logger.warn("Node info is null");
             return;
         }
-        List<RoomInfo> roomInfoList = dao.getAll();
-        // TODO: 2022/5/19
+        String uuid = nodeInfo.getUuid();
+        List<RoomInfo> roomInfoList = DaoManager.getRoomInfoDao().getAll();
+        synchronized (CHAT_ROOM_LIST) {
+            synchronized (MANAGE_ROOM_MAP) {
+                for (RoomInfo roomInfo : roomInfoList) {
+                    try {
+                        ChatRoom chatRoom = new ChatRoom(roomInfo);
+                        chatRoom.setMemberList(memberDao.getMemberList(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
+                        chatRoom.putMessages(DaoManager.getMessageDao().getMessagesBeforeTime(roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), System.currentTimeMillis(), ChatRoom.MSG_LIST_BUF_SIZE));
+                        CHAT_ROOM_LIST.add(chatRoom);
+                        if (Objects.equals(uuid, roomInfo.getNodeUUID())) {
+                            MANAGE_ROOM_MAP.put(roomInfo.getRoomUUID(), chatRoom);
+                        }
+                    } catch (Exception e) {
+                        Logger.warn(e);
+                    }
+                }
+            }
+        }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
         }).update();
+        Logger.info("Load all rooms");
     }
 
     /**
@@ -138,16 +160,28 @@ public final class ChatRoomManager {
         }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
         }).update();
+        Logger.info("Unload all rooms");
     }
 
     /**
-     * 获取聊天室列表
+     * 获取全部聊天室列表
      *
      * @return 聊天室列表
      */
-    static List<ChatRoom> getChatRoomList() {
+    static List<ChatRoom> getAllChatRoomList() {
         synchronized (CHAT_ROOM_LIST) {
             return Collections.unmodifiableList(CHAT_ROOM_LIST);
+        }
+    }
+
+    /**
+     * 获取被管理的房间列表
+     *
+     * @return 房间列表
+     */
+    static List<ChatRoom> getManageRoomList() {
+        synchronized (MANAGE_ROOM_MAP) {
+            return new ArrayList<>(MANAGE_ROOM_MAP.values());
         }
     }
 }
