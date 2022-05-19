@@ -36,8 +36,8 @@ public class ReceiveTask extends TransmitTask {
         super.handlePacket(packetBody);
         if (stepCount == 0) {
             BSONObject object = BsonUtils.deserialize(packetBody.getPayload());
-            entityType = (int) object.get("ENTITY_TYPE");
-            data = new byte[(int) object.get("DATA_LENGTH")];
+            entityType = (int) object.get(ENTITY_TYPE);
+            data = new byte[(int) object.get(DATA_LENGTH)];
             if (entityType != ENTITY_NODE_INFO
                     && entityType != ENTITY_ROOM_INFO
                     && entityType != ENTITY_MEMBER_INFO

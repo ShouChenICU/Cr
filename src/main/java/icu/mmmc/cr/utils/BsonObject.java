@@ -1,6 +1,6 @@
 package icu.mmmc.cr.utils;
 
-import icu.mmmc.cr.Serialization;
+import icu.mmmc.cr.entities.Serialization;
 import org.bson.BasicBSONObject;
 
 /**

@@ -1,6 +1,5 @@
 package icu.mmmc.cr.entities;
 
-import icu.mmmc.cr.Serialization;
 import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
@@ -21,7 +20,7 @@ import java.util.UUID;
  * @author shouchen
  */
 @SuppressWarnings("unused")
-public class NodeInfo implements Serialization {
+public class NodeInfo implements Serialization, Checkable {
     /**
      * 全球唯一标识符
      * 使用UUID第3版以公钥为命名空间生成
@@ -88,6 +87,7 @@ public class NodeInfo implements Serialization {
      *
      * @throws Exception 验证不通过
      */
+    @Override
     public void check() throws Exception {
         if (uuid == null
                 || publicKey == null

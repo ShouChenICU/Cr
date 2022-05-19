@@ -1,6 +1,5 @@
 package icu.mmmc.cr.entities;
 
-import icu.mmmc.cr.Serialization;
 import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
@@ -14,7 +13,7 @@ import java.util.Objects;
  * @author shouchen
  */
 @SuppressWarnings("unused")
-public class MemberInfo implements Serialization {
+public class MemberInfo implements Serialization, Checkable {
     /**
      * 所属节点标识码
      */
@@ -44,6 +43,7 @@ public class MemberInfo implements Serialization {
         check();
     }
 
+    @Override
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null || userUUID == null) {
             throw new EntityBrokenException("Member info broken");

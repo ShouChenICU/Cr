@@ -148,11 +148,13 @@ public final class NodeManager {
                 } catch (Exception e) {
                     Logger.error(e);
                 }
-                synchronized (NODE_MAP) {
-                    if (uuid != null && NODE_MAP.remove(uuid) != null) {
-                        Logger.debug("Remove " + nodeInfo.getUuid());
-                        ChatRoomManager.unregisterNode(uuid);
+                if (uuid != null) {
+                    synchronized (NODE_MAP) {
+                        if (NODE_MAP.remove(uuid) != null) {
+                            Logger.debug("Remove " + nodeInfo.getUuid());
+                        }
                     }
+                    ChatRoomManager.unregisterNode(uuid);
                 }
                 Logger.info("Disconnect to " + uuid);
             }

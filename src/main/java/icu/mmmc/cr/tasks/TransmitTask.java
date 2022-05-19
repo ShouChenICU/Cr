@@ -8,6 +8,8 @@ import icu.mmmc.cr.callbacks.ProgressCallback;
  * @author shouchen
  */
 public abstract class TransmitTask extends AbstractTask {
+    protected static final String ENTITY_TYPE = "ENTITY_TYPE";
+    protected static final String DATA_LENGTH = "DATA_LENGTH";
     /**
      * 节点信息
      */

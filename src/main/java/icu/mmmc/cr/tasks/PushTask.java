@@ -2,7 +2,7 @@ package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.Node;
 import icu.mmmc.cr.PacketBody;
-import icu.mmmc.cr.Serialization;
+import icu.mmmc.cr.entities.Serialization;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
@@ -71,8 +71,8 @@ public class PushTask extends TransmitTask {
                         .setTaskType(TaskTypes.PUSH)
                         .setPayload(
                                 new BsonObject()
-                                        .set("ENTITY_TYPE", entityType)
-                                        .set("DATA_LENGTH", data.length)
+                                        .set(ENTITY_TYPE, entityType)
+                                        .set(DATA_LENGTH, data.length)
                                         .serialize()
                         )
         );
