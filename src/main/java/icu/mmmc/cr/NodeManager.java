@@ -123,6 +123,8 @@ public final class NodeManager {
                             heartTest(this);
                             Logger.info("Connected to " + uuid);
                             finalCallback.done();
+                            Objects.requireNonNullElse(Cr.CallBack.nodeUpdateCallback, () -> {
+                            }).update();
                             // 连接成功后给对方推送自己的完整信息
                             addTask(new PushTask(Cr.getNodeInfo(), null));
                         }
@@ -152,6 +154,8 @@ public final class NodeManager {
                     synchronized (NODE_MAP) {
                         if (NODE_MAP.remove(uuid) != null) {
                             Logger.debug("Remove " + nodeInfo.getUuid());
+                            Objects.requireNonNullElse(Cr.CallBack.nodeUpdateCallback, () -> {
+                            }).update();
                         }
                     }
                     ChatRoomManager.unregisterNode(uuid);

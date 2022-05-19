@@ -4,6 +4,7 @@ import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.Node;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.Version;
+import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -65,14 +66,15 @@ public class InitTask1 extends AbstractTask {
             } else {
                 nodeInfo = dao.getByUUID(uuid);
             }
+            NewConnectionCallback newConnectionCallback = Cr.CallBack.newConnectionCallback;
             if (nodeInfo == null) {
                 // 找不到该节点
-                if (Cr.CallBack.newConnectionCallback == null) {
+                if (newConnectionCallback == null) {
                     halt("连接被拒绝");
                     return;
                 } else {
                     // 询问用户是否允许连接
-                    if (Cr.CallBack.newConnectionCallback.newConnection(uuid, true)) {
+                    if (newConnectionCallback.newConnection(uuid, true)) {
                         // 生成一个临时节点信息
                         nodeInfo = new NodeInfo()
                                 .setUuid(uuid)
@@ -83,8 +85,8 @@ public class InitTask1 extends AbstractTask {
                     }
                 }
             } else {
-                if (Cr.CallBack.newConnectionCallback != null) {
-                    if (!Cr.CallBack.newConnectionCallback.newConnection(nodeInfo.getAttr(NodeAttributes.$NICK), false)) {
+                if (newConnectionCallback != null) {
+                    if (!newConnectionCallback.newConnection(nodeInfo.getAttr(NodeAttributes.$NICK), false)) {
                         halt("连接被拒绝");
                         return;
                     }

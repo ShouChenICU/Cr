@@ -10,6 +10,7 @@ import icu.mmmc.cr.callbacks.ProgressCallback;
 public abstract class TransmitTask extends AbstractTask {
     protected static final String ENTITY_TYPE = "ENTITY_TYPE";
     protected static final String DATA_LENGTH = "DATA_LENGTH";
+    protected static final int MAX_DATA_LENGTH = 8 * 1024 * 1024;
     /**
      * 节点信息
      */

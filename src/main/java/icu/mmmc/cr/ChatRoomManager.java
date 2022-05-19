@@ -76,50 +76,68 @@ public final class ChatRoomManager {
     public static void updateRoomInfo(RoomInfo roomInfo) {
         try {
             roomInfo.check();
+            RoomInfoDao dao = DaoManager.getRoomInfoDao();
+            if (dao != null) {
+                dao.updateRoomInfo(roomInfo);
+            }
+            synchronized (CHAT_ROOM_LIST) {
+                for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
+                    if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
+                        chatRoom.updateRoomInfo(roomInfo);
+                        Logger.debug("update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                        Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+                        }).update();
+                        return;
+                    }
+                }
+                ChatRoom chatRoom = new ChatRoom(roomInfo);
+                CHAT_ROOM_LIST.add(chatRoom);
+                Logger.debug("add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+                }).update();
+            }
         } catch (Exception e) {
             Logger.warn(e);
-            return;
         }
-        synchronized (CHAT_ROOM_LIST) {
-            for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
-                if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
-                    chatRoom.updateRoomInfo(roomInfo);
-                    Logger.debug("update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
-                    break;
-                }
-            }
-        }
-        RoomInfoDao dao = DaoManager.getRoomInfoDao();
-        if (dao != null) {
-            dao.updateRoomInfo(roomInfo);
-        }
-        Logger.debug("update room info\n" + roomInfo);
     }
 
     /**
      * 创建聊天室
      */
     static ChatRoom createChatRoom() {
-        // TODO: 2022/5/7  
+        // TODO: 2022/5/7
+        Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+        }).update();
         return null;
     }
 
     /**
      * 从数据库加载全部聊天室
+     * 仅在初始化时调用
      */
-    static void loadAll() {
+    static synchronized void loadAll() {
+        RoomInfoDao dao = DaoManager.getRoomInfoDao();
+        if (dao == null) {
+            return;
+        }
+        List<RoomInfo> roomInfoList = dao.getAll();
+        // TODO: 2022/5/19
+        Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+        }).update();
     }
 
     /**
      * 卸载全部聊天室
      */
-    static void unloadAll() {
+    static synchronized void unloadAll() {
         synchronized (CHAT_ROOM_LIST) {
             CHAT_ROOM_LIST.clear();
         }
         synchronized (MANAGE_ROOM_MAP) {
             MANAGE_ROOM_MAP.clear();
         }
+        Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+        }).update();
     }
 
     /**

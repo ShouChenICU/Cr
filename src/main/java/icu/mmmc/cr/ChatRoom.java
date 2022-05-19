@@ -4,7 +4,6 @@ import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.RoomInfo;
-import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
@@ -44,13 +43,11 @@ public class ChatRoom {
 
     public ChatRoom(RoomInfo roomInfo) throws Exception {
         Objects.requireNonNull(roomInfo);
-        if (roomInfo.getNodeUUID() == null || roomInfo.getRoomUUID() == null) {
-            throw new EntityBrokenException("room info broken");
-        }
+        roomInfo.check();
         this.roomInfo = roomInfo;
         this.memberMap = new HashMap<>();
         onlineNodeMap = new HashMap<>();
-        messageList = new ArrayList<>();
+        messageList = new ArrayList<>(MSG_LIST_BUF_SIZE + 1);
     }
 
     /**
@@ -67,8 +64,12 @@ public class ChatRoom {
      *
      * @param roomInfo 房间信息
      */
-    protected void updateRoomInfo(RoomInfo roomInfo) {
+    protected void updateRoomInfo(RoomInfo roomInfo) throws Exception {
         if (roomInfo == null) {
+            return;
+        }
+        roomInfo.check();
+        if (!Objects.equals(roomInfo, this.roomInfo)) {
             return;
         }
         synchronized (this) {
@@ -88,11 +89,11 @@ public class ChatRoom {
     }
 
     /**
-     * 更新成员列表
+     * 设置成员列表
      *
      * @param memberInfoList 成员信息列表
      */
-    protected void updateMemberList(List<MemberInfo> memberInfoList) {
+    protected void setMemberList(List<MemberInfo> memberInfoList) {
         synchronized (memberMap) {
             memberMap.clear();
             for (MemberInfo info : memberInfoList) {
@@ -144,6 +145,21 @@ public class ChatRoom {
                 }
             }
         }
+    }
+
+    /**
+     * 是否在线
+     *
+     * @return 如果房间主人是自己，直接返回true
+     * 如果房间主人在线，则返回true
+     * 否则返回false
+     */
+    public boolean isOnline() {
+        if (Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
+            return true;
+        }
+        Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+        return node != null && node.isOnline();
     }
 
     /**

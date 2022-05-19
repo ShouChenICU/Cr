@@ -40,6 +40,9 @@ public class PushTask extends TransmitTask {
             throw new UnknownEntityTypeException();
         }
         data = entity.serialize();
+        if (data.length > MAX_DATA_LENGTH) {
+            throw new Exception("Data length out of range");
+        }
     }
 
     @Override

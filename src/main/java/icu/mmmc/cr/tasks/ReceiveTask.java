@@ -37,7 +37,7 @@ public class ReceiveTask extends TransmitTask {
         if (stepCount == 0) {
             BSONObject object = BsonUtils.deserialize(packetBody.getPayload());
             entityType = (int) object.get(ENTITY_TYPE);
-            data = new byte[(int) object.get(DATA_LENGTH)];
+            int length = (int) object.get(DATA_LENGTH);
             if (entityType != ENTITY_NODE_INFO
                     && entityType != ENTITY_ROOM_INFO
                     && entityType != ENTITY_MEMBER_INFO
@@ -52,7 +52,19 @@ public class ReceiveTask extends TransmitTask {
                 );
                 halt(s);
                 return;
+            } else if (length > MAX_DATA_LENGTH) {
+                String s = "Data length out of range";
+                node.postPacket(
+                        new PacketBody()
+                                .setSource(taskId)
+                                .setDestination(packetBody.getSource())
+                                .setTaskType(TaskTypes.ERROR)
+                                .setPayload(s.getBytes(StandardCharsets.UTF_8))
+                );
+                halt(s);
+                return;
             }
+            data = new byte[length];
             stepCount = 1;
         } else {
             byte[] buf = packetBody.getPayload();
@@ -100,6 +112,9 @@ public class ReceiveTask extends TransmitTask {
 
     private void receiveRoomInfo() throws Exception {
         RoomInfo roomInfo = new RoomInfo(data);
+        if (!Objects.equals(roomInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+            throw new Exception("Room info illegal");
+        }
         ChatRoomManager.updateRoomInfo(roomInfo);
     }
 

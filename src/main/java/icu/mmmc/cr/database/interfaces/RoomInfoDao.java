@@ -2,6 +2,8 @@ package icu.mmmc.cr.database.interfaces;
 
 import icu.mmmc.cr.entities.RoomInfo;
 
+import java.util.List;
+
 /**
  * 房间信息访问接口
  *
@@ -32,4 +34,11 @@ public interface RoomInfoDao {
      * @return 房间信息
      */
     RoomInfo getByUUID(String nodeUUID, String roomUUID);
+
+    /**
+     * 获取全部房间信息
+     *
+     * @return 全部房间信息列表
+     */
+    List<RoomInfo> getAll();
 }
