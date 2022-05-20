@@ -3,6 +3,7 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.database.interfaces.RoomInfoDao;
+import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.Logger;
@@ -105,9 +106,32 @@ public final class ChatRoomManager {
 
     /**
      * 创建聊天室
+     *
+     * @param nodeUUID 所属节点标识码
      */
-    static ChatRoom createChatRoom() {
-        // TODO: 2022/5/7
+    static synchronized ChatRoom createChatRoom(String nodeUUID, String title) throws Exception {
+        String uuid = UUID.randomUUID().toString();
+        synchronized (MANAGE_ROOM_MAP) {
+            while (MANAGE_ROOM_MAP.get(uuid) != null) {
+                uuid = UUID.randomUUID().toString();
+            }
+            RoomInfo roomInfo = new RoomInfo()
+                    .setNodeUUID(nodeUUID)
+                    .setRoomUUID(uuid)
+                    .setTitle(title)
+                    .setUpdateTime(System.currentTimeMillis());
+            ChatRoom chatRoom = new ChatRoom(roomInfo);
+            chatRoom.updateMemberInfo(new MemberInfo()
+                    .setNodeUUID(nodeUUID)
+                    .setRoomUUID(uuid)
+                    .setUserUUID(nodeUUID)
+                    .setUpdateTime(System.currentTimeMillis()));
+            MANAGE_ROOM_MAP.put(uuid, chatRoom);
+            synchronized (CHAT_ROOM_LIST) {
+                CHAT_ROOM_LIST.add(chatRoom);
+            }
+            DaoManager.getRoomInfoDao().updateRoomInfo(roomInfo);
+        }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
         }).update();
         return null;
@@ -126,8 +150,8 @@ public final class ChatRoomManager {
         }
         String uuid = nodeInfo.getUuid();
         List<RoomInfo> roomInfoList = DaoManager.getRoomInfoDao().getAll();
-        synchronized (CHAT_ROOM_LIST) {
-            synchronized (MANAGE_ROOM_MAP) {
+        synchronized (MANAGE_ROOM_MAP) {
+            synchronized (CHAT_ROOM_LIST) {
                 for (RoomInfo roomInfo : roomInfoList) {
                     try {
                         ChatRoom chatRoom = new ChatRoom(roomInfo);

@@ -21,6 +21,7 @@ import java.util.List;
  */
 @SuppressWarnings("unused")
 public class Cr {
+    private static final Object LOCK = new Object();
     private static Configuration configuration;
     private static NodeInfo nodeInfo;
     private static PrivateKey privateKey;
@@ -30,32 +31,34 @@ public class Cr {
      *
      * @param configuration 配置
      */
-    public static synchronized void init(Configuration configuration, NodeInfo nodeInfo, PrivateKey privateKey) throws Exception {
-        if (Cr.configuration != null || configuration == null) {
-            return;
+    public static void init(Configuration configuration, NodeInfo nodeInfo, PrivateKey privateKey) throws Exception {
+        synchronized (LOCK) {
+            if (Cr.configuration != null || configuration == null) {
+                return;
+            }
+            Logger.info("Cr init");
+            Logger.info("Version: " + Version.VERSION_STRING);
+            configuration.check();
+            if (nodeInfo == null || privateKey == null) {
+                throw new IdentityException("Corrupted identity information");
+            }
+            nodeInfo.check();
+            if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
+                throw new Exception("Key pair mismatch");
+            }
+            Cr.nodeInfo = nodeInfo;
+            Cr.privateKey = privateKey;
+            Cr.configuration = configuration;
+            Logger.setLevel(configuration.getLogLevel());
+            WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
+            ChatRoomManager.loadAll();
+            if (configuration.isListen()) {
+                NetCore.init(configuration.getListenPort());
+            } else {
+                NetCore.init(-1);
+            }
+            Logger.info("Cr init done");
         }
-        Logger.info("Cr init");
-        Logger.info("Version: " + Version.VERSION_STRING);
-        configuration.check();
-        if (nodeInfo == null || privateKey == null) {
-            throw new IdentityException("Corrupted identity information");
-        }
-        nodeInfo.check();
-        if (!KeyUtils.checkKeyPair(nodeInfo.getPublicKey(), privateKey)) {
-            throw new Exception("Key pair mismatch");
-        }
-        Cr.nodeInfo = nodeInfo;
-        Cr.privateKey = privateKey;
-        Cr.configuration = configuration;
-        Logger.setLevel(configuration.getLogLevel());
-        WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
-        ChatRoomManager.loadAll();
-        if (configuration.isListen()) {
-            NetCore.init(configuration.getListenPort());
-        } else {
-            NetCore.init(-1);
-        }
-        Logger.info("Cr init done");
     }
 
     /**
@@ -77,116 +80,163 @@ public class Cr {
     }
 
     /**
-     * 连接到一个节点
-     *
-     * @param address  *网络地址
-     * @param callback 回调
+     * 终止
      */
-    public static synchronized void connectToNode(InetSocketAddress address, ProgressCallback callback) {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            callback.halt("Cr not initialized");
-            return;
+    public static void halt() {
+        synchronized (LOCK) {
+            if (configuration == null) {
+                return;
+            }
+            Logger.info("Cr halt");
+            NodeManager.disconnectALL();
+            ChatRoomManager.unloadAll();
+            NetCore.halt();
+            WorkerThreadPool.halt();
+            nodeInfo = null;
+            privateKey = null;
+            CallBack.newConnectionCallback = null;
         }
-        NodeManager.connectToNode(address, callback);
     }
 
     /**
-     * 断开一个节点的连接
-     *
-     * @param uuid 节点标识码
+     * 节点api接口
      */
-    public static synchronized void disconnectToNode(String uuid) {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            return;
+    public static class NodeApi {
+        /**
+         * 连接到一个节点
+         *
+         * @param address  *网络地址
+         * @param callback 回调
+         */
+        public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    callback.halt("Cr not initialized");
+                    return;
+                }
+                NodeManager.connectToNode(address, callback);
+            }
         }
-        Node node = NodeManager.getByUUID(uuid);
-        if (node != null) {
-            try {
-                node.disconnect();
-            } catch (Exception e) {
-                Logger.warn(e);
+
+        /**
+         * 断开一个节点的连接
+         *
+         * @param uuid 节点标识码
+         */
+        public static void disconnectToNode(String uuid) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return;
+                }
+                Node node = NodeManager.getByUUID(uuid);
+                if (node != null) {
+                    try {
+                        node.disconnect();
+                    } catch (Exception e) {
+                        Logger.warn(e);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 获取在线节点信息列表
+         *
+         * @return 在线节点信息列表
+         */
+        public static List<NodeInfo> getOnlineNodeInfoList() {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return new ArrayList<>();
+                }
+                List<Node> nodes = NodeManager.getOnlineNodeList();
+                List<NodeInfo> nodeInfos = new ArrayList<>();
+                for (Node node : nodes) {
+                    nodeInfos.add(node.getNodeInfo());
+                }
+                return nodeInfos;
+            }
+        }
+
+        /**
+         * 判断节点是否在线
+         *
+         * @param uuid 节点标识码
+         * @return 连接状态
+         */
+        public static boolean nodeIsOnline(String uuid) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return false;
+                }
+                Node node = NodeManager.getByUUID(uuid);
+                return node != null && node.isOnline();
             }
         }
     }
 
     /**
-     * 获取在线节点信息列表
-     *
-     * @return 在线节点信息列表
+     * 聊天室api接口
      */
-    public static synchronized List<NodeInfo> getOnlineNodeInfoList() {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            return new ArrayList<>();
+    public static class ChatRoomApi {
+        /**
+         * 创建聊天室
+         *
+         * @return 创建成功则返回新聊天室，否则返回null
+         */
+        public static ChatRoom createChatRoom(String title) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return null;
+                }
+                try {
+                    return ChatRoomManager.createChatRoom(nodeInfo.getUuid(), title);
+                } catch (Exception e) {
+                    Logger.warn(e);
+                    return null;
+                }
+            }
         }
-        List<Node> nodes = NodeManager.getOnlineNodeList();
-        List<NodeInfo> nodeInfos = new ArrayList<>();
-        for (Node node : nodes) {
-            nodeInfos.add(node.getNodeInfo());
+
+        /**
+         * 获取聊天室列表
+         *
+         * @return 聊天室列表
+         */
+        public static List<ChatRoom> getChatRoomList() {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return new ArrayList<>();
+                }
+                return ChatRoomManager.getAllChatRoomList();
+            }
         }
-        return nodeInfos;
+
+        /**
+         * 获取被管理的房间列表
+         *
+         * @return 房间列表
+         */
+        public static List<ChatRoom> getManageRoomList() {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return new ArrayList<>();
+                }
+                return ChatRoomManager.getManageRoomList();
+            }
+        }
     }
 
     /**
-     * 获取聊天室列表
-     *
-     * @return 聊天室列表
+     * 回调设置
      */
-    public static synchronized List<ChatRoom> getChatRoomList() {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            return new ArrayList<>();
-        }
-        return ChatRoomManager.getAllChatRoomList();
-    }
-
-    /**
-     * 获取被管理的房间列表
-     *
-     * @return 房间列表
-     */
-    public static synchronized List<ChatRoom> getManageRoomList() {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            return new ArrayList<>();
-        }
-        return ChatRoomManager.getManageRoomList();
-    }
-
-    /**
-     * 判断节点是否在线
-     *
-     * @param uuid 节点标识码
-     * @return 连接状态
-     */
-    public static boolean nodeIsOnline(String uuid) {
-        if (nodeInfo == null) {
-            Logger.warn("Cr not initialized");
-            return false;
-        }
-        Node node = NodeManager.getByUUID(uuid);
-        return node != null && node.isOnline();
-    }
-
-    /**
-     * 终止
-     */
-    public static synchronized void halt() {
-        if (configuration == null) {
-            return;
-        }
-        Logger.info("Cr halt");
-        NodeManager.disconnectALL();
-        ChatRoomManager.unloadAll();
-        NetCore.halt();
-        WorkerThreadPool.halt();
-        nodeInfo = null;
-        privateKey = null;
-        CallBack.newConnectionCallback = null;
-    }
-
     public static class CallBack {
         public static NewConnectionCallback newConnectionCallback;
         public static NodeUpdateCallback nodeUpdateCallback;

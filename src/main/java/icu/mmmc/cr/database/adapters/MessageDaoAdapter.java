@@ -34,14 +34,14 @@ public class MessageDaoAdapter implements MessageDao {
     /**
      * 获取指定房间的指定时间之前的消息列表
      *
-     * @param nodeUUID 节点标识码
-     * @param roomUUID 房间标识码
-     * @param time     时间戳
-     * @param count    数量
+     * @param nodeUUID  节点标识码
+     * @param roomUUID  房间标识码
+     * @param timeStamp 时间戳
+     * @param count     数量
      * @return 消息列表
      */
     @Override
-    public List<MessageInfo> getMessagesBeforeTime(String nodeUUID, String roomUUID, long time, int count) {
+    public List<MessageInfo> getMessagesBeforeTime(String nodeUUID, String roomUUID, long timeStamp, int count) {
         return new ArrayList<>();
     }
 }
