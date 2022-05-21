@@ -51,7 +51,7 @@ public class Cr {
             Cr.configuration = configuration;
             Logger.setLevel(configuration.getLogLevel());
             WorkerThreadPool.init(configuration.getWorkerThreadPoolSize());
-            ChatRoomManager.loadAll();
+            ChatRoomManager.loadAllRooms();
             if (configuration.isListen()) {
                 NetCore.init(configuration.getListenPort());
             } else {
@@ -89,7 +89,7 @@ public class Cr {
             }
             Logger.info("Cr halt");
             NodeManager.disconnectALL();
-            ChatRoomManager.unloadAll();
+            ChatRoomManager.unloadAllRooms();
             NetCore.halt();
             WorkerThreadPool.halt();
             nodeInfo = null;
@@ -204,11 +204,11 @@ public class Cr {
         }
 
         /**
-         * 获取聊天室列表
+         * 获取全部聊天室列表
          *
          * @return 聊天室列表
          */
-        public static List<ChatRoom> getChatRoomList() {
+        public static List<ChatRoom> getAllChatRoomList() {
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
@@ -230,6 +230,22 @@ public class Cr {
                     return new ArrayList<>();
                 }
                 return ChatRoomManager.getManageRoomList();
+            }
+        }
+
+        /**
+         * 获取指定节点所管理的房间列表
+         *
+         * @param nodeUUID 节点标识码
+         * @return 房间列表
+         */
+        static List<ChatRoom> getRoomListByNodeUUID(String nodeUUID) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return new ArrayList<>();
+                }
+                return ChatRoomManager.getRoomListByNodeUUID(nodeUUID);
             }
         }
     }

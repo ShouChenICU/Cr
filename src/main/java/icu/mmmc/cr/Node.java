@@ -8,7 +8,9 @@ import icu.mmmc.cr.tasks.Task;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,6 +26,7 @@ public abstract class Node extends NetNode {
     private final Queue<PacketBody> waitSendPacketQueue;
     private final Encryptor encryptor;
     private final ConcurrentHashMap<Integer, Task> taskMap;
+    private final ConcurrentHashMap<String, ChatRoom> roomMap;
     protected NodeInfo nodeInfo;
     protected long heartBeat;
     private int taskIdCount;
@@ -36,6 +39,7 @@ public abstract class Node extends NetNode {
         waitSendPacketQueue = new LinkedList<>();
         encryptor = new Encryptor();
         taskMap = new ConcurrentHashMap<>();
+        roomMap = new ConcurrentHashMap<>();
         heartBeat = System.currentTimeMillis();
         taskIdCount = 1;
         sendPacketCount = 0;
@@ -69,7 +73,7 @@ public abstract class Node extends NetNode {
                 taskIdCount = 1;
             }
         }
-        Logger.debug("add task " + task.getClass().getSimpleName() + " id:" + id);
+        Logger.debug("Add task " + task.getClass().getSimpleName() + " id:" + id);
         task.init(this, id);
     }
 
@@ -80,7 +84,7 @@ public abstract class Node extends NetNode {
      */
     public void removeTask(int taskId) {
         if (taskMap.remove(taskId) != null) {
-            Logger.debug("remove task " + taskId);
+            Logger.debug("Remove task " + taskId);
         }
     }
 
@@ -163,7 +167,7 @@ public abstract class Node extends NetNode {
     @Override
     protected void dataHandler(byte[] data) throws Exception {
         heartBeat = System.currentTimeMillis();
-        Logger.debug("data handler, length = " + data.length);
+        Logger.debug("Data handler, length = " + data.length);
         PacketBody packetBody = new PacketBody(encryptor.decrypt(data));
         receivePacketCount++;
         Task task;
@@ -178,14 +182,14 @@ public abstract class Node extends NetNode {
                     task = new ReceiveTask();
                     break;
                 default:
-                    throw new Exception("unknown task");
+                    throw new Exception("Unknown task");
             }
             addTask(task);
         } else {
             task = taskMap.get(packetBody.getDestination());
         }
         if (task == null) {
-            throw new Exception("task not found");
+            throw new Exception("Task not found");
         }
         task.handlePacket(packetBody);
     }
@@ -195,7 +199,7 @@ public abstract class Node extends NetNode {
         super.disconnect();
         synchronized (taskMap) {
             for (Task task : taskMap.values()) {
-                task.halt("disconnect");
+                task.halt("Disconnect");
             }
         }
     }
@@ -213,6 +217,19 @@ public abstract class Node extends NetNode {
         } catch (Exception ex) {
             Logger.warn(ex);
         }
+    }
+
+    /**
+     * 获取该节点管理的房间列表
+     *
+     * @return 房间列表
+     */
+    public List<ChatRoom> getRoomList() {
+        return new ArrayList<>(roomMap.values());
+    }
+
+    public ConcurrentHashMap<String, ChatRoom> getRoomMap() {
+        return roomMap;
     }
 
     public long getHeartBeat() {

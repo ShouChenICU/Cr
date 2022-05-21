@@ -2,13 +2,13 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.MemberDao;
-import icu.mmmc.cr.database.interfaces.RoomInfoDao;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 聊天室管理器
@@ -39,15 +39,23 @@ public final class ChatRoomManager {
      */
     static void registerNode(Node node) {
         if (node == null || node.getNodeInfo() == null || node.getNodeInfo().getUuid() == null) {
-            Logger.warn("node info broken");
+            Logger.warn("Node info broken");
             return;
         }
         String uuid = node.getNodeInfo().getUuid();
-        Logger.debug("register node " + uuid);
+        Logger.debug("Register node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
             for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
                 if (chatRoom.containsMember(uuid)) {
                     chatRoom.putNode(uuid, node);
+                }
+            }
+        }
+        ConcurrentHashMap<String, ChatRoom> roomMap = node.getRoomMap();
+        synchronized (CHAT_ROOM_LIST) {
+            for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
+                if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), uuid)) {
+                    roomMap.put(chatRoom.getRoomInfo().getRoomUUID(), chatRoom);
                 }
             }
         }
@@ -60,10 +68,10 @@ public final class ChatRoomManager {
      */
     static void unregisterNode(String uuid) {
         if (uuid == null) {
-            Logger.warn("uuid is null");
+            Logger.warn("UUID is null");
             return;
         }
-        Logger.debug("unregister node " + uuid);
+        Logger.debug("Unregister node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
             for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
                 chatRoom.removeNode(uuid);
@@ -79,15 +87,11 @@ public final class ChatRoomManager {
     public static void updateRoomInfo(RoomInfo roomInfo) {
         try {
             roomInfo.check();
-            RoomInfoDao dao = DaoManager.getRoomInfoDao();
-            if (dao != null) {
-                dao.updateRoomInfo(roomInfo);
-            }
             synchronized (CHAT_ROOM_LIST) {
                 for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
                     if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
                         chatRoom.updateRoomInfo(roomInfo);
-                        Logger.debug("update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                        Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                         }).update();
                         return;
@@ -95,10 +99,15 @@ public final class ChatRoomManager {
                 }
                 ChatRoom chatRoom = new ChatRoom(roomInfo);
                 CHAT_ROOM_LIST.add(chatRoom);
-                Logger.debug("add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node != null) {
+                    node.getRoomMap().put(roomInfo.getRoomUUID(), chatRoom);
+                }
+                Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                 Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                 }).update();
             }
+            DaoManager.getRoomInfoDao().updateRoomInfo(roomInfo);
         } catch (Exception e) {
             Logger.warn(e);
         }
@@ -141,7 +150,7 @@ public final class ChatRoomManager {
      * 从数据库加载全部聊天室
      * 仅在初始化时调用
      */
-    static synchronized void loadAll() {
+    static synchronized void loadAllRooms() {
         NodeInfo nodeInfo = Cr.getNodeInfo();
         MemberDao memberDao = DaoManager.getMemberDao();
         if (nodeInfo == null) {
@@ -175,7 +184,7 @@ public final class ChatRoomManager {
     /**
      * 卸载全部聊天室
      */
-    static synchronized void unloadAll() {
+    static synchronized void unloadAllRooms() {
         synchronized (CHAT_ROOM_LIST) {
             CHAT_ROOM_LIST.clear();
         }
@@ -188,9 +197,9 @@ public final class ChatRoomManager {
     }
 
     /**
-     * 获取全部聊天室列表
+     * 获取全部房间列表
      *
-     * @return 聊天室列表
+     * @return 房间列表
      */
     static List<ChatRoom> getAllChatRoomList() {
         synchronized (CHAT_ROOM_LIST) {
@@ -207,5 +216,23 @@ public final class ChatRoomManager {
         synchronized (MANAGE_ROOM_MAP) {
             return new ArrayList<>(MANAGE_ROOM_MAP.values());
         }
+    }
+
+    /**
+     * 获取指定节点所管理的房间列表
+     *
+     * @param nodeUUID 节点标识码
+     * @return 房间列表
+     */
+    static List<ChatRoom> getRoomListByNodeUUID(String nodeUUID) {
+        List<ChatRoom> rooms = new ArrayList<>();
+        synchronized (CHAT_ROOM_LIST) {
+            for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
+                if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), nodeUUID)) {
+                    rooms.add(chatRoom);
+                }
+            }
+        }
+        return rooms;
     }
 }
