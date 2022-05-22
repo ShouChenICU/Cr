@@ -1,5 +1,6 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.constants.Constants;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.entities.MemberInfo;
@@ -92,11 +93,13 @@ public final class ChatRoomManager {
                     if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
                         chatRoom.updateRoomInfo(roomInfo);
                         Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                        DaoManager.getRoomDao().updateRoomInfo(roomInfo);
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                         }).update();
                         return;
                     }
                 }
+                // TODO: 2022/5/21 询问用户是否加入新的房间
                 ChatRoom chatRoom = new ChatRoom(roomInfo);
                 CHAT_ROOM_LIST.add(chatRoom);
                 Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
@@ -107,7 +110,7 @@ public final class ChatRoomManager {
                 Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                 }).update();
             }
-            DaoManager.getRoomInfoDao().updateRoomInfo(roomInfo);
+            DaoManager.getRoomDao().updateRoomInfo(roomInfo);
         } catch (Exception e) {
             Logger.warn(e);
         }
@@ -119,16 +122,25 @@ public final class ChatRoomManager {
      * @param nodeUUID 所属节点标识码
      */
     static synchronized ChatRoom createChatRoom(String nodeUUID, String title) throws Exception {
+        if (title != null) {
+            if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
+                throw new Exception("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
+            }
+        }
         String uuid = UUID.randomUUID().toString();
         synchronized (MANAGE_ROOM_MAP) {
             while (MANAGE_ROOM_MAP.get(uuid) != null) {
                 uuid = UUID.randomUUID().toString();
+            }
+            if (title == null) {
+                title = uuid;
             }
             RoomInfo roomInfo = new RoomInfo()
                     .setNodeUUID(nodeUUID)
                     .setRoomUUID(uuid)
                     .setTitle(title)
                     .setUpdateTime(System.currentTimeMillis());
+            DaoManager.getRoomDao().updateRoomInfo(roomInfo);
             ChatRoom chatRoom = new ChatRoom(roomInfo);
             chatRoom.updateMemberInfo(new MemberInfo()
                     .setNodeUUID(nodeUUID)
@@ -139,11 +151,43 @@ public final class ChatRoomManager {
             synchronized (CHAT_ROOM_LIST) {
                 CHAT_ROOM_LIST.add(chatRoom);
             }
-            DaoManager.getRoomInfoDao().updateRoomInfo(roomInfo);
         }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
         }).update();
         return null;
+    }
+
+    /**
+     * 删除聊天室
+     *
+     * @param nodeUUID 节点标识码
+     * @param roomUUID 房间标识码
+     * @throws Exception 异常
+     */
+    static void deleteChatRoom(String nodeUUID, String roomUUID) throws Exception {
+        if (nodeUUID == null) {
+            throw new Exception("Node UUID is null");
+        } else if (roomUUID == null) {
+            throw new Exception("Room UUID is null");
+        }
+        synchronized (MANAGE_ROOM_MAP) {
+            synchronized (CHAT_ROOM_LIST) {
+                Iterator<ChatRoom> iterator = CHAT_ROOM_LIST.iterator();
+                while (iterator.hasNext()) {
+                    ChatRoom chatRoom = iterator.next();
+                    if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), nodeUUID)
+                            && Objects.equals(chatRoom.getRoomInfo().getRoomUUID(), roomUUID)) {
+                        chatRoom.disable();
+                        iterator.remove();
+                        break;
+                    }
+                }
+                MANAGE_ROOM_MAP.remove(roomUUID);
+                DaoManager.getRoomDao().deleteRoom(nodeUUID, roomUUID);
+            }
+        }
+        Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+        }).update();
     }
 
     /**
@@ -158,14 +202,23 @@ public final class ChatRoomManager {
             return;
         }
         String uuid = nodeInfo.getUuid();
-        List<RoomInfo> roomInfoList = DaoManager.getRoomInfoDao().getAll();
+        List<RoomInfo> roomInfoList = DaoManager.getRoomDao().getAll();
         synchronized (MANAGE_ROOM_MAP) {
             synchronized (CHAT_ROOM_LIST) {
                 for (RoomInfo roomInfo : roomInfoList) {
                     try {
                         ChatRoom chatRoom = new ChatRoom(roomInfo);
                         chatRoom.setMemberList(memberDao.getMemberList(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
-                        chatRoom.putMessages(DaoManager.getMessageDao().getMessagesBeforeTime(roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), System.currentTimeMillis(), ChatRoom.MSG_LIST_BUF_SIZE));
+                        chatRoom.putMessageList(
+                                DaoManager.getMessageDao()
+                                        .getMessagesBeforeTime(
+                                                roomInfo.getNodeUUID(),
+                                                roomInfo.getRoomUUID(),
+                                                System.currentTimeMillis(),
+                                                Constants.MSG_LIST_BUF_SIZE
+                                        )
+                        );
+                        chatRoom.setMaxMsgID(DaoManager.getMessageDao().getMaxID());
                         CHAT_ROOM_LIST.add(chatRoom);
                         if (Objects.equals(uuid, roomInfo.getNodeUUID())) {
                             MANAGE_ROOM_MAP.put(roomInfo.getRoomUUID(), chatRoom);
@@ -186,7 +239,11 @@ public final class ChatRoomManager {
      */
     static synchronized void unloadAllRooms() {
         synchronized (CHAT_ROOM_LIST) {
-            CHAT_ROOM_LIST.clear();
+            Iterator<ChatRoom> iterator = CHAT_ROOM_LIST.iterator();
+            while (iterator.hasNext()) {
+                iterator.next().disable();
+                iterator.remove();
+            }
         }
         synchronized (MANAGE_ROOM_MAP) {
             MANAGE_ROOM_MAP.clear();

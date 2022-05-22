@@ -46,6 +46,12 @@ public abstract class Node extends NetNode {
         receivePacketCount = 0;
     }
 
+    /**
+     * 设置节点信息
+     * [该方法是一次性的]
+     *
+     * @param nodeInfo 节点信息
+     */
     public void setNodeInfo(NodeInfo nodeInfo) {
         synchronized (this) {
             if (this.nodeInfo == null) {
@@ -54,6 +60,11 @@ public abstract class Node extends NetNode {
         }
     }
 
+    /**
+     * 获取节点信息
+     *
+     * @return 节点信息
+     */
     public NodeInfo getNodeInfo() {
         return nodeInfo;
     }

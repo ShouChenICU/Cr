@@ -1,6 +1,6 @@
 package icu.mmmc.cr.database.adapters;
 
-import icu.mmmc.cr.database.interfaces.RoomInfoDao;
+import icu.mmmc.cr.database.interfaces.RoomDao;
 import icu.mmmc.cr.entities.RoomInfo;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.List;
  * @author shouchen
  */
 @SuppressWarnings("unused")
-public class RoomInfoDaoAdapter implements RoomInfoDao {
+public class RoomDaoAdapter implements RoomDao {
     /**
      * 删除房间信息
      *
@@ -20,7 +20,7 @@ public class RoomInfoDaoAdapter implements RoomInfoDao {
      * @param roomUUID 房间标识码
      */
     @Override
-    public void deleteRoomInfo(String nodeUUID, String roomUUID) {
+    public void deleteRoom(String nodeUUID, String roomUUID) {
     }
 
     /**

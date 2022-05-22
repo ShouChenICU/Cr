@@ -23,7 +23,14 @@ public interface MessageDao {
      *
      * @param messageInfo 消息实体
      */
-    void addMessage(MessageInfo messageInfo);
+    void putMessage(MessageInfo messageInfo);
+
+    /**
+     * 获取最大的id
+     *
+     * @return id
+     */
+    int getMaxID();
 
     /**
      * 获取指定房间的指定时间之前的消息列表

@@ -28,7 +28,17 @@ public class MessageDaoAdapter implements MessageDao {
      * @param messageInfo 消息实体
      */
     @Override
-    public void addMessage(MessageInfo messageInfo) {
+    public void putMessage(MessageInfo messageInfo) {
+    }
+
+    /**
+     * 获取最大的id
+     *
+     * @return id
+     */
+    @Override
+    public int getMaxID() {
+        return 0;
     }
 
     /**

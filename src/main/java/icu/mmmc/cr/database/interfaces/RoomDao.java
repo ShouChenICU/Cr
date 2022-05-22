@@ -10,14 +10,14 @@ import java.util.List;
  * @author shouchen
  */
 @SuppressWarnings("unused")
-public interface RoomInfoDao {
+public interface RoomDao {
     /**
-     * 删除房间信息
+     * 删除房间
      *
      * @param nodeUUID 所属节点标识码
      * @param roomUUID 房间标识码
      */
-    void deleteRoomInfo(String nodeUUID, String roomUUID);
+    void deleteRoom(String nodeUUID, String roomUUID);
 
     /**
      * 更新或者新增房间信息

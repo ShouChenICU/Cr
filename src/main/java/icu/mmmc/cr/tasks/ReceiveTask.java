@@ -1,9 +1,12 @@
 package icu.mmmc.cr.tasks;
 
+import icu.mmmc.cr.ChatRoom;
 import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.constants.TaskTypes;
+import icu.mmmc.cr.entities.MemberInfo;
+import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.BsonUtils;
@@ -118,11 +121,29 @@ public class ReceiveTask extends TransmitTask {
         ChatRoomManager.updateRoomInfo(roomInfo);
     }
 
-    private void receiveMemberInfo() {
-
+    private void receiveMemberInfo() throws Exception {
+        MemberInfo memberInfo = new MemberInfo(data);
+        memberInfo.check();
+        if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+            throw new Exception("Member illegal");
+        }
+        ChatRoom chatRoom = node.getRoomMap().get(memberInfo.getRoomUUID());
+        if (chatRoom == null) {
+            throw new Exception("Chat room not found");
+        }
+        chatRoom.updateMemberInfo(memberInfo);
     }
 
-    private void receiveMessageInfo() {
-
+    private void receiveMessageInfo() throws Exception {
+        MessageInfo messageInfo = new MessageInfo(data);
+        messageInfo.check();
+        if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUuid())) {
+            throw new Exception("Message illegal");
+        }
+        ChatRoom chatRoom = node.getRoomMap().get(messageInfo.getRoomUUID());
+        if (chatRoom == null) {
+            throw new Exception("Chat room not found");
+        }
+        chatRoom.putMessage(messageInfo);
     }
 }
