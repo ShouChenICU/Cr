@@ -27,4 +27,8 @@ public class TaskTypes {
      * 推送
      */
     public static final int PUSH = 3;
+    /**
+     * 房间同步
+     */
+    public static final int SYNC_ROOM = 4;
 }

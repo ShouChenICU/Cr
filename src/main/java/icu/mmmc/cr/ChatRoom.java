@@ -259,7 +259,7 @@ public class ChatRoom {
      * @param uuid 成员标识码
      * @return 如果存在该成员则返回true, 否则返回false
      */
-    public boolean containsMember(String uuid) {
+    public boolean containMember(String uuid) {
         synchronized (memberMap) {
             return memberMap.containsKey(uuid);
         }

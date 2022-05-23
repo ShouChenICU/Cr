@@ -44,6 +44,9 @@ public abstract class AbstractTask implements Task {
 
     /**
      * 初始化任务
+     *
+     * @param node   节点
+     * @param taskId 分配的任务id
      */
     @Override
     public void init(Node node, int taskId) {

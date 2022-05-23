@@ -4,6 +4,7 @@ import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.tasks.InitTask0;
 import icu.mmmc.cr.tasks.ReceiveTask;
+import icu.mmmc.cr.tasks.SyncRoomTask0;
 import icu.mmmc.cr.tasks.Task;
 import icu.mmmc.cr.utils.Logger;
 
@@ -74,7 +75,7 @@ public abstract class Node extends NetNode {
      *
      * @param task 任务
      */
-    protected void addTask(Task task) {
+    public void addTask(Task task) {
         int id;
         synchronized (taskMap) {
             id = taskIdCount++;
@@ -191,6 +192,9 @@ public abstract class Node extends NetNode {
                     break;
                 case TaskTypes.PUSH:
                     task = new ReceiveTask();
+                    break;
+                case TaskTypes.SYNC_ROOM:
+                    task = new SyncRoomTask0();
                     break;
                 default:
                     throw new Exception("Unknown task");

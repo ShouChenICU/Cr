@@ -47,7 +47,7 @@ public final class ChatRoomManager {
         Logger.debug("Register node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
             for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
-                if (chatRoom.containsMember(uuid)) {
+                if (chatRoom.containMember(uuid)) {
                     chatRoom.putNode(uuid, node);
                 }
             }
