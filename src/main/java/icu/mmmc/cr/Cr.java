@@ -1,9 +1,6 @@
 package icu.mmmc.cr;
 
-import icu.mmmc.cr.callbacks.ChatRoomUpdateCallback;
-import icu.mmmc.cr.callbacks.NewConnectionCallback;
-import icu.mmmc.cr.callbacks.NodeUpdateCallback;
-import icu.mmmc.cr.callbacks.ProgressCallback;
+import icu.mmmc.cr.callbacks.*;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.exceptions.IdentityException;
 import icu.mmmc.cr.utils.KeyUtils;
@@ -257,5 +254,6 @@ public class Cr {
         public static NewConnectionCallback newConnectionCallback;
         public static NodeUpdateCallback nodeUpdateCallback;
         public static ChatRoomUpdateCallback chatRoomUpdateCallback;
+        public static JoinNewRoomCallback joinNewRoomCallback;
     }
 }

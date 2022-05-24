@@ -14,6 +14,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -23,6 +25,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author shouchen
  */
 public abstract class Node extends NetNode {
+    private static final long TASK_TIMEOUT = TimeUnit.SECONDS.toMillis(180);
+    private static final ScheduledThreadPoolExecutor TIMER = new ScheduledThreadPoolExecutor(1, r -> {
+        Thread thread = new Thread(r);
+        thread.setDaemon(true);
+        return thread;
+    });
     private final ReentrantLock postLock;
     private final Queue<PacketBody> waitSendPacketQueue;
     private final Encryptor encryptor;
@@ -45,6 +53,20 @@ public abstract class Node extends NetNode {
         taskIdCount = 1;
         sendPacketCount = 0;
         receivePacketCount = 0;
+    }
+
+    /**
+     * 轮询检查任务是否超时
+     */
+    protected void checkTaskTimeOut() {
+        if (isConnect()) {
+            for (Task task : taskMap.values()) {
+                if (task.getUpdateTime() - task.getStartTime() > TASK_TIMEOUT) {
+                    task.halt("Time out");
+                }
+            }
+            TIMER.schedule(this::checkTaskTimeOut, 30, TimeUnit.SECONDS);
+        }
     }
 
     /**

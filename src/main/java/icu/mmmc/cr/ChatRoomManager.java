@@ -99,16 +99,17 @@ public final class ChatRoomManager {
                         return;
                     }
                 }
-                // TODO: 2022/5/21 询问用户是否加入新的房间
-                ChatRoom chatRoom = new ChatRoom(roomInfo);
-                CHAT_ROOM_LIST.add(chatRoom);
-                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
-                if (node != null) {
-                    node.getRoomMap().put(roomInfo.getRoomUUID(), chatRoom);
+                if (Objects.requireNonNullElse(Cr.CallBack.joinNewRoomCallback, r -> false).joinNewRoom(roomInfo)) {
+                    ChatRoom chatRoom = new ChatRoom(roomInfo);
+                    CHAT_ROOM_LIST.add(chatRoom);
+                    Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                    if (node != null) {
+                        node.getRoomMap().put(roomInfo.getRoomUUID(), chatRoom);
+                    }
+                    Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
+                    Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
+                    }).update();
                 }
-                Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
-                Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
-                }).update();
             }
             DaoManager.getRoomDao().updateRoomInfo(roomInfo);
         } catch (Exception e) {

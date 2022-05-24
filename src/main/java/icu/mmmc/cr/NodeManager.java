@@ -8,6 +8,7 @@ import icu.mmmc.cr.database.interfaces.NodeInfoDao;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.tasks.InitTask1;
 import icu.mmmc.cr.tasks.PushTask;
+import icu.mmmc.cr.tasks.SyncRoomTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
@@ -125,8 +126,10 @@ public final class NodeManager {
                             finalCallback.done();
                             Objects.requireNonNullElse(Cr.CallBack.nodeUpdateCallback, () -> {
                             }).update();
+                            checkTaskTimeOut();
                             // 连接成功后给对方推送自己的完整信息
                             addTask(new PushTask(Cr.getNodeInfo(), null));
+                            addTask(new SyncRoomTask1(null));
                         }
                     }
                 } catch (Exception e) {
