@@ -8,7 +8,7 @@ package icu.mmmc.cr.constants;
 @SuppressWarnings("unused")
 public class NodeAttributes {
     /**
-     * 昵称
+     * 节点名称
      */
-    public static final String $NICK = "$NICK";
+    public static final String $TITLE = "$TITLE";
 }

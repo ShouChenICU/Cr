@@ -96,7 +96,7 @@ public class InitTask0 extends AbstractTask {
                     }
                 } else {
                     if (newConnectionCallback != null) {
-                        if (!newConnectionCallback.newConnection(nodeInfo.getAttr(NodeAttributes.$NICK), false)) {
+                        if (!newConnectionCallback.newConnection(nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
                             halt("连接被拒绝");
                         }
                     }

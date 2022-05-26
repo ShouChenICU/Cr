@@ -1,6 +1,7 @@
 package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.Cr;
+import icu.mmmc.cr.Node;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.WorkerThreadPool;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
@@ -18,13 +19,11 @@ import java.util.concurrent.CountDownLatch;
  * @author shouchen
  */
 public class SyncRoomTask0 extends AbstractTask {
-    private final CountDownLatch latch;
-    private final List<RoomInfo> roomInfoList;
+    private CountDownLatch latch;
+    private List<RoomInfo> roomInfoList;
 
     public SyncRoomTask0() {
         super(null);
-        roomInfoList = DaoManager.getRoomDao().getByOwnUUIDAndContainMember(Cr.getNodeInfo().getUuid(), node.getNodeInfo().getUuid());
-        latch = new CountDownLatch(roomInfoList.size());
     }
 
     /**
@@ -56,10 +55,18 @@ public class SyncRoomTask0 extends AbstractTask {
                         .setSource(taskId)
                         .setDestination(packetBody.getSource())
                         .setTaskType(TaskTypes.ACK));
+                done();
             } catch (InterruptedException e) {
                 Logger.warn(e);
                 halt(e.toString());
             }
         });
+    }
+
+    @Override
+    public void init(Node node, int taskId) {
+        super.init(node, taskId);
+        roomInfoList = DaoManager.getRoomDao().getByOwnUUIDAndContainMember(Cr.getNodeInfo().getUuid(), node.getNodeInfo().getUuid());
+        latch = new CountDownLatch(roomInfoList.size());
     }
 }
