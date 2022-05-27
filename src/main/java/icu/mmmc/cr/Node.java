@@ -62,7 +62,7 @@ public abstract class Node extends NetNode {
         if (isConnect()) {
             for (Task task : taskMap.values()) {
                 if (task.getUpdateTime() - task.getStartTime() > TASK_TIMEOUT) {
-                    task.halt("Time out");
+                    task.halt("Task time out");
                 }
             }
             TIMER.schedule(this::checkTaskTimeOut, 30, TimeUnit.SECONDS);
@@ -71,15 +71,12 @@ public abstract class Node extends NetNode {
 
     /**
      * 设置节点信息
-     * [该方法是一次性的]
      *
      * @param nodeInfo 节点信息
      */
     public void setNodeInfo(NodeInfo nodeInfo) {
         synchronized (this) {
-            if (this.nodeInfo == null) {
-                this.nodeInfo = nodeInfo;
-            }
+            this.nodeInfo = nodeInfo;
         }
     }
 

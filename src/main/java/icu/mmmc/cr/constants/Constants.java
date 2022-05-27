@@ -11,6 +11,10 @@ public class Constants {
      */
     public static final int MSG_LIST_BUF_SIZE = 20;
     /**
+     * 同步一次消息的数量
+     */
+    public static final int SYNC_MESSAGES_QUANTITY = 20;
+    /**
      * 最大房间名长度
      */
     public static final int MAX_ROOM_TITLE_LENGTH = 64;

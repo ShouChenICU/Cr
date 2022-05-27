@@ -160,6 +160,12 @@ public class ChatPavilion implements ChatRoom {
         }
     }
 
+    /**
+     * 广播消息
+     *
+     * @param messageInfo 消息实体
+     * @throws Exception 异常
+     */
     private void broadcastMsg(MessageInfo messageInfo) throws Exception {
         synchronized (onlineNodeMap) {
             for (Node node : onlineNodeMap.values()) {
@@ -345,6 +351,9 @@ public class ChatPavilion implements ChatRoom {
             synchronized (availLock) {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
+                } else if (isAdmin) {
+                    callback.done();
+                    return;
                 }
                 // TODO: 2022/5/27  
             }
@@ -363,6 +372,9 @@ public class ChatPavilion implements ChatRoom {
             synchronized (availLock) {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
+                } else if (isAdmin) {
+                    callback.done();
+                    return;
                 }
                 // TODO: 2022/5/27  
             }

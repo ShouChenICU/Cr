@@ -1,9 +1,6 @@
 package icu.mmmc.cr.tasks;
 
-import icu.mmmc.cr.ChatPavilion;
-import icu.mmmc.cr.ChatRoomManager;
-import icu.mmmc.cr.NodeManager;
-import icu.mmmc.cr.PacketBody;
+import icu.mmmc.cr.*;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
@@ -85,6 +82,9 @@ public class ReceiveTask extends TransmitTask {
         );
     }
 
+    /**
+     * 数据处理
+     */
     public void handle() {
         try {
             switch (entityType) {
@@ -108,11 +108,17 @@ public class ReceiveTask extends TransmitTask {
         }
     }
 
+    /**
+     * 节点信息接收处理
+     */
     private void receiveNodeInfo() throws Exception {
         NodeInfo nodeInfo = new NodeInfo(data);
         NodeManager.updateNodeInfo(nodeInfo);
     }
 
+    /**
+     * 房间信息接收处理
+     */
     private void receiveRoomInfo() throws Exception {
         RoomInfo roomInfo = new RoomInfo(data);
         if (!Objects.equals(roomInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
@@ -121,11 +127,21 @@ public class ReceiveTask extends TransmitTask {
         ChatRoomManager.updateRoomInfo(roomInfo);
     }
 
+    /**
+     * 成员信息接收处理
+     */
     private void receiveMemberInfo() throws Exception {
         MemberInfo memberInfo = new MemberInfo(data);
         memberInfo.check();
-        if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
-            throw new Exception("Member illegal");
+        // 如果这个成员所属的房间归我管理
+        if (Objects.equals(memberInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
+            // 那么对方只能修改自己的属性，比如昵称什么的，否则就是在搞事情
+            if (!Objects.equals(memberInfo.getUserUUID(), node.getNodeInfo().getUuid())) {
+                throw new Exception("Member illegal");
+            }
+        } else if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+            // 这个成员所属的房间既不归我也不归他，那么这个成员信息就是无中生有
+            throw new Exception("Member fabricated");
         }
         ChatPavilion chatPavilion = (ChatPavilion) node.getRoomMap().get(memberInfo.getRoomUUID());
         if (chatPavilion == null) {
@@ -134,11 +150,21 @@ public class ReceiveTask extends TransmitTask {
         chatPavilion.updateMemberInfo(memberInfo);
     }
 
+    /**
+     * 消息接收处理
+     */
     private void receiveMessageInfo() throws Exception {
         MessageInfo messageInfo = new MessageInfo(data);
         messageInfo.check();
-        if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUuid())) {
-            throw new Exception("Message illegal");
+        // 如果这个消息所属的房间归我管理
+        if (Objects.equals(messageInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
+            // 那么消息的发送者必须是对方
+            if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUuid())) {
+                throw new Exception("Message illegal");
+            }
+        } else if (!Objects.equals(messageInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+            // 这个消息所属的房间既不归我也不归他，那么这个消息就是无中生有
+            throw new Exception("Message fabricated");
         }
         ChatPavilion chatPavilion = (ChatPavilion) node.getRoomMap().get(messageInfo.getRoomUUID());
         if (chatPavilion == null) {
