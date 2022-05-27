@@ -47,8 +47,9 @@ public final class ChatRoomManager {
         Logger.debug("Register node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
             for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
-                if (chatRoom.containMember(uuid)) {
-                    chatRoom.putNode(uuid, node);
+                ChatPavilion chatPavilion = (ChatPavilion) chatRoom;
+                if (chatPavilion.containMember(uuid)) {
+                    chatPavilion.putNode(uuid, node);
                 }
             }
         }
@@ -75,7 +76,7 @@ public final class ChatRoomManager {
         Logger.debug("Unregister node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
             for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
-                chatRoom.removeNode(uuid);
+                ((ChatPavilion) chatRoom).removeNode(uuid);
             }
         }
     }
@@ -91,7 +92,7 @@ public final class ChatRoomManager {
             synchronized (CHAT_ROOM_LIST) {
                 for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
                     if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
-                        chatRoom.updateRoomInfo(roomInfo);
+                        ((ChatPavilion) chatRoom).updateRoomInfo(roomInfo);
                         Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                         DaoManager.getRoomDao().updateRoomInfo(roomInfo);
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
@@ -100,11 +101,11 @@ public final class ChatRoomManager {
                     }
                 }
                 if (Objects.requireNonNullElse(Cr.CallBack.joinNewRoomCallback, r -> false).joinNewRoom(roomInfo)) {
-                    ChatRoom chatRoom = new ChatRoom(roomInfo);
-                    CHAT_ROOM_LIST.add(chatRoom);
+                    ChatPavilion chatPavilion = new ChatPavilion(roomInfo);
+                    CHAT_ROOM_LIST.add(chatPavilion);
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                     if (node != null) {
-                        node.getRoomMap().put(roomInfo.getRoomUUID(), chatRoom);
+                        node.getRoomMap().put(roomInfo.getRoomUUID(), chatPavilion);
                     }
                     Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                     Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
@@ -142,15 +143,15 @@ public final class ChatRoomManager {
                     .setTitle(title)
                     .setUpdateTime(System.currentTimeMillis());
             DaoManager.getRoomDao().updateRoomInfo(roomInfo);
-            ChatRoom chatRoom = new ChatRoom(roomInfo);
-            chatRoom.updateMemberInfo(new MemberInfo()
+            ChatPavilion chatPavilion = new ChatPavilion(roomInfo);
+            chatPavilion.updateMemberInfo(new MemberInfo()
                     .setNodeUUID(nodeUUID)
                     .setRoomUUID(uuid)
                     .setUserUUID(nodeUUID)
                     .setUpdateTime(System.currentTimeMillis()));
-            MANAGE_ROOM_MAP.put(uuid, chatRoom);
+            MANAGE_ROOM_MAP.put(uuid, chatPavilion);
             synchronized (CHAT_ROOM_LIST) {
-                CHAT_ROOM_LIST.add(chatRoom);
+                CHAT_ROOM_LIST.add(chatPavilion);
             }
         }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
@@ -178,7 +179,7 @@ public final class ChatRoomManager {
                     ChatRoom chatRoom = iterator.next();
                     if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), nodeUUID)
                             && Objects.equals(chatRoom.getRoomInfo().getRoomUUID(), roomUUID)) {
-                        chatRoom.disable();
+                        ((ChatPavilion) chatRoom).disable();
                         iterator.remove();
                         break;
                     }
@@ -208,7 +209,7 @@ public final class ChatRoomManager {
             synchronized (CHAT_ROOM_LIST) {
                 for (RoomInfo roomInfo : roomInfoList) {
                     try {
-                        ChatRoom chatRoom = new ChatRoom(roomInfo);
+                        ChatPavilion chatRoom = new ChatPavilion(roomInfo);
                         chatRoom.setMemberList(memberDao.getMemberList(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
                         chatRoom.putMessageList(
                                 DaoManager.getMessageDao()
@@ -242,7 +243,7 @@ public final class ChatRoomManager {
         synchronized (CHAT_ROOM_LIST) {
             Iterator<ChatRoom> iterator = CHAT_ROOM_LIST.iterator();
             while (iterator.hasNext()) {
-                iterator.next().disable();
+                ((ChatPavilion) iterator.next()).disable();
                 iterator.remove();
             }
         }

@@ -1,6 +1,6 @@
 package icu.mmmc.cr.tasks;
 
-import icu.mmmc.cr.ChatRoom;
+import icu.mmmc.cr.ChatPavilion;
 import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.PacketBody;
@@ -127,11 +127,11 @@ public class ReceiveTask extends TransmitTask {
         if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
             throw new Exception("Member illegal");
         }
-        ChatRoom chatRoom = node.getRoomMap().get(memberInfo.getRoomUUID());
-        if (chatRoom == null) {
+        ChatPavilion chatPavilion = (ChatPavilion) node.getRoomMap().get(memberInfo.getRoomUUID());
+        if (chatPavilion == null) {
             throw new Exception("Chat room not found");
         }
-        chatRoom.updateMemberInfo(memberInfo);
+        chatPavilion.updateMemberInfo(memberInfo);
     }
 
     private void receiveMessageInfo() throws Exception {
@@ -140,10 +140,10 @@ public class ReceiveTask extends TransmitTask {
         if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUuid())) {
             throw new Exception("Message illegal");
         }
-        ChatRoom chatRoom = node.getRoomMap().get(messageInfo.getRoomUUID());
-        if (chatRoom == null) {
+        ChatPavilion chatPavilion = (ChatPavilion) node.getRoomMap().get(messageInfo.getRoomUUID());
+        if (chatPavilion == null) {
             throw new Exception("Chat room not found");
         }
-        chatRoom.putMessage(messageInfo);
+        chatPavilion.putMessage(messageInfo);
     }
 }

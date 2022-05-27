@@ -27,6 +27,10 @@ public class MemberInfo implements Serialization, Checkable {
      */
     private String userUUID;
     /**
+     * 昵称
+     */
+    private String nickname;
+    /**
      * 更新时间
      */
     private long updateTime;
@@ -39,6 +43,7 @@ public class MemberInfo implements Serialization, Checkable {
         nodeUUID = (String) object.get("NODE_UUID");
         roomUUID = (String) object.get("ROOM_UUID");
         userUUID = (String) object.get("USER_UUID");
+        nickname = (String) object.get("NICKNAME");
         updateTime = (long) object.get("UPDATE_TIME");
         check();
     }
@@ -77,6 +82,15 @@ public class MemberInfo implements Serialization, Checkable {
         return this;
     }
 
+    public String getNickname() {
+        return nickname;
+    }
+
+    public MemberInfo setNickname(String nickname) {
+        this.nickname = nickname;
+        return this;
+    }
+
     public long getUpdateTime() {
         return updateTime;
     }
@@ -109,6 +123,7 @@ public class MemberInfo implements Serialization, Checkable {
                 "nodeUUID='" + nodeUUID + '\'' +
                 ", roomUUID='" + roomUUID + '\'' +
                 ", userUUID='" + userUUID + '\'' +
+                ", nickname='" + nickname + '\'' +
                 ", updateTime=" + updateTime +
                 '}';
     }
@@ -124,6 +139,7 @@ public class MemberInfo implements Serialization, Checkable {
                 .set("NODE_UUID", nodeUUID)
                 .set("ROOM_UUID", roomUUID)
                 .set("USER_UUID", userUUID)
+                .set("NICKNAME", nickname)
                 .set("UPDATE_TIME", updateTime)
                 .serialize();
     }

@@ -201,6 +201,26 @@ public class Cr {
         }
 
         /**
+         * 删除聊天室
+         *
+         * @return 删除成功返回true，否则返回false
+         */
+        public static boolean deleteChatRoom(String nodeUUID, String roomUUID) {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                }
+                try {
+                    ChatRoomManager.deleteChatRoom(nodeUUID, roomUUID);
+                    return true;
+                } catch (Exception e) {
+                    Logger.warn(e);
+                    return false;
+                }
+            }
+        }
+
+        /**
          * 获取全部聊天室列表
          *
          * @return 聊天室列表
