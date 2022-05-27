@@ -31,6 +31,14 @@ public interface ChatRoom {
     boolean containMember(String uuid);
 
     /**
+     * 获取成员信息
+     *
+     * @param uuid 成员标识码
+     * @return 成员信息，没有则返回null
+     */
+    MemberInfo getMemberInfo(String uuid);
+
+    /**
      * 获取成员列表
      *
      * @return 成员列表dge
@@ -50,7 +58,22 @@ public interface ChatRoom {
      * @param content  文本消息内容
      * @param callback 进度回调
      */
-    void postMessage(String content, ProgressCallback callback) throws Exception;
+    void postMessage(String content, ProgressCallback callback);
+
+    /**
+     * 同步指定时间之前的消息列表
+     *
+     * @param timeStamp 时间戳
+     * @param callback  进度回调
+     */
+    void syncMessagesBeforeTime(long timeStamp, ProgressCallback callback);
+
+    /**
+     * 同步成员列表
+     *
+     * @param callback 进度回调
+     */
+    void syncMembers(ProgressCallback callback);
 
     /**
      * 是否在线

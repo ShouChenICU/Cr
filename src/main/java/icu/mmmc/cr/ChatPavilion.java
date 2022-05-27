@@ -9,6 +9,7 @@ import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.tasks.PushTask;
+import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
 
@@ -257,6 +258,19 @@ public class ChatPavilion implements ChatRoom {
     }
 
     /**
+     * 获取成员信息
+     *
+     * @param uuid 成员标识码
+     * @return 成员信息，没有则返回null
+     */
+    @Override
+    public MemberInfo getMemberInfo(String uuid) {
+        synchronized (memberMap) {
+            return memberMap.get(uuid);
+        }
+    }
+
+    /**
      * 是否存在成员
      *
      * @param uuid 成员标识码
@@ -288,30 +302,73 @@ public class ChatPavilion implements ChatRoom {
      * @param callback 进度回调
      */
     @Override
-    public void postMessage(String content, ProgressCallback callback) throws Exception {
-        synchronized (availLock) {
-            if (!isAvailable) {
-                throw new Exception("Room is not available");
-            }
-            Objects.requireNonNull(content);
-            if (content.length() > Constants.MAX_TEXT_MSG_LENGTH) {
-                throw new Exception("Message length out of range " + Constants.MAX_TEXT_MSG_LENGTH);
-            }
-            MessageInfo msg = new MessageInfo()
-                    .setNodeUUID(roomInfo.getNodeUUID())
-                    .setRoomUUID(roomInfo.getRoomUUID())
-                    .setContent(content)
-                    .setSenderUUID(Cr.getNodeInfo().getUuid())
-                    .setType(MessageTypes.TYPE_TEXT);
-            if (isAdmin) {
-                putMessage(msg);
-            } else {
-                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
-                if (node == null) {
-                    throw new Exception("Room is offline");
+    public void postMessage(String content, ProgressCallback callback) {
+        try {
+            synchronized (availLock) {
+                if (!isAvailable) {
+                    throw new Exception("Room is not available");
                 }
-                node.addTask(new PushTask(msg, callback));
+                Objects.requireNonNull(content);
+                if (content.length() > Constants.MAX_TEXT_MSG_LENGTH) {
+                    throw new Exception("Message length out of range " + Constants.MAX_TEXT_MSG_LENGTH);
+                }
+                MessageInfo msg = new MessageInfo()
+                        .setNodeUUID(roomInfo.getNodeUUID())
+                        .setRoomUUID(roomInfo.getRoomUUID())
+                        .setContent(content)
+                        .setSenderUUID(Cr.getNodeInfo().getUuid())
+                        .setType(MessageTypes.TYPE_TEXT);
+                if (isAdmin) {
+                    putMessage(msg);
+                } else {
+                    Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                    if (node == null) {
+                        throw new Exception("Room is offline");
+                    }
+                    node.addTask(new PushTask(msg, callback));
+                }
             }
+        } catch (Exception e) {
+            Logger.warn(e);
+            callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
+        }
+    }
+
+    /**
+     * 同步指定时间之前的消息列表
+     *
+     * @param timeStamp 时间戳
+     */
+    @Override
+    public void syncMessagesBeforeTime(long timeStamp, ProgressCallback callback) {
+        try {
+            synchronized (availLock) {
+                if (!isAvailable) {
+                    throw new Exception("Room is not available");
+                }
+                // TODO: 2022/5/27  
+            }
+        } catch (Exception e) {
+            Logger.warn(e);
+            callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
+        }
+    }
+
+    /**
+     * 同步成员列表
+     */
+    @Override
+    public void syncMembers(ProgressCallback callback) {
+        try {
+            synchronized (availLock) {
+                if (!isAvailable) {
+                    throw new Exception("Room is not available");
+                }
+                // TODO: 2022/5/27  
+            }
+        } catch (Exception e) {
+            Logger.warn(e);
+            callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
         }
     }
 
