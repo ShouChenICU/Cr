@@ -4,8 +4,10 @@ import icu.mmmc.cr.ChatRoom;
 import icu.mmmc.cr.Node;
 import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.callbacks.ProgressCallback;
+import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -16,9 +18,11 @@ import java.util.List;
 public class SyncMemberTask1 extends AbstractTask {
     private final String syncRoomUUID;
     private final List<MemberInfo> memberInfoList;
+    private int stepCount;
 
     public SyncMemberTask1(ChatRoom chatRoom, ProgressCallback callback) {
         super(callback);
+        stepCount = 0;
         syncRoomUUID = chatRoom.getRoomInfo().getRoomUUID();
         this.memberInfoList = chatRoom.getMemberList();
     }
@@ -31,6 +35,9 @@ public class SyncMemberTask1 extends AbstractTask {
     @Override
     public void handlePacket(PacketBody packetBody) throws Exception {
         super.handlePacket(packetBody);
+        if(stepCount==0){
+
+        }
     }
 
     /**
@@ -42,5 +49,10 @@ public class SyncMemberTask1 extends AbstractTask {
     @Override
     public void init(Node node, int taskId) {
         super.init(node, taskId);
+        node.postPacket(new PacketBody()
+                .setSource(taskId)
+                .setDestination(0)
+                .setTaskType(TaskTypes.SYNC_MEMBER)
+                .setPayload(syncRoomUUID.getBytes(StandardCharsets.UTF_8)));
     }
 }

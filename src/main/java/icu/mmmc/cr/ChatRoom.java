@@ -23,6 +23,13 @@ public interface ChatRoom {
     RoomInfo getRoomInfo();
 
     /**
+     * 更新房间信息
+     *
+     * @param roomInfo 房间信息
+     */
+    void updateRoomInfo(RoomInfo roomInfo) throws Exception;
+
+    /**
      * 添加成员
      *
      * @param memberInfo 成员信息
@@ -35,6 +42,13 @@ public interface ChatRoom {
      * @param memberInfo 成员信息
      */
     void removeMember(MemberInfo memberInfo) throws Exception;
+
+    /**
+     * 更新成员
+     *
+     * @param memberInfo 成员信息
+     */
+    void updateMember(MemberInfo memberInfo) throws Exception;
 
     /**
      * 是否存在成员

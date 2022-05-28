@@ -92,7 +92,7 @@ public final class ChatRoomManager {
             synchronized (CHAT_ROOM_LIST) {
                 for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
                     if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
-                        ((ChatPavilion) chatRoom).updateRoomInfo(roomInfo);
+                        chatRoom.updateRoomInfo(roomInfo);
                         Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                         DaoManager.getRoomDao().updateRoomInfo(roomInfo);
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
@@ -270,6 +270,21 @@ public final class ChatRoomManager {
     static List<ChatRoom> getManageRoomList() {
         synchronized (MANAGE_ROOM_MAP) {
             return new ArrayList<>(MANAGE_ROOM_MAP.values());
+        }
+    }
+
+    /**
+     * 根据房间标识码获取被管理的聊天室
+     *
+     * @param uuid 房间标识码
+     * @return 聊天室
+     */
+    public static ChatRoom getByRoomUUID(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        synchronized (MANAGE_ROOM_MAP) {
+            return MANAGE_ROOM_MAP.get(uuid);
         }
     }
 
