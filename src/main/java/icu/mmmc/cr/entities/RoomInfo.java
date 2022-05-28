@@ -1,5 +1,6 @@
 package icu.mmmc.cr.entities;
 
+import icu.mmmc.cr.constants.Constants;
 import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
@@ -32,6 +33,7 @@ public class RoomInfo implements Serialization, Checkable {
     private long updateTime;
 
     public RoomInfo() {
+        title = "";
     }
 
     public RoomInfo(byte[] dat) throws Exception {
@@ -47,6 +49,8 @@ public class RoomInfo implements Serialization, Checkable {
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null | title == null) {
             throw new EntityBrokenException("Room info broken");
+        } else if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
+            throw new EntityBrokenException("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
         }
     }
 

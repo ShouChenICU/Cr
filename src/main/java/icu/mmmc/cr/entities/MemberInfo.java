@@ -1,5 +1,6 @@
 package icu.mmmc.cr.entities;
 
+import icu.mmmc.cr.constants.Constants;
 import icu.mmmc.cr.exceptions.EntityBrokenException;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
@@ -36,6 +37,7 @@ public class MemberInfo implements Serialization, Checkable {
     private long updateTime;
 
     public MemberInfo() {
+        nickname = "";
     }
 
     public MemberInfo(byte[] dat) throws Exception {
@@ -52,6 +54,11 @@ public class MemberInfo implements Serialization, Checkable {
     public void check() throws EntityBrokenException {
         if (nodeUUID == null || roomUUID == null || userUUID == null) {
             throw new EntityBrokenException("Member info broken");
+        } else if (nickname != null && nickname.length() > Constants.MAX_NICKNAME_LENGTH) {
+            throw new EntityBrokenException("Nickname length out of range " + Constants.MAX_NICKNAME_LENGTH);
+        }
+        if (nickname == null) {
+            nickname = "";
         }
     }
 

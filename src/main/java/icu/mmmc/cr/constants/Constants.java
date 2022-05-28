@@ -5,11 +5,12 @@ package icu.mmmc.cr.constants;
  *
  * @author shouchen
  */
+@SuppressWarnings("unused")
 public class Constants {
     /**
      * 缓存的消息列表长度
      */
-    public static final int MSG_LIST_BUF_SIZE = 20;
+    public static final int MSG_LIST_BUF_SIZE = 24;
     /**
      * 同步一次消息的数量
      */
@@ -19,7 +20,11 @@ public class Constants {
      */
     public static final int MAX_ROOM_TITLE_LENGTH = 64;
     /**
-     * 最大文本消息长度
+     * 最大昵称长度
      */
-    public static final int MAX_TEXT_MSG_LENGTH = 4096;
+    public static final int MAX_NICKNAME_LENGTH = 32;
+    /**
+     * 最大消息内容长度
+     */
+    public static final int MAX_MSG_PAYLOAD_LENGTH = 4096;
 }

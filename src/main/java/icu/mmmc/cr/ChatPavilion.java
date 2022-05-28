@@ -4,9 +4,11 @@ import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.Constants;
 import icu.mmmc.cr.constants.MessageTypes;
+import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
+import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.tasks.PushTask;
 import icu.mmmc.cr.utils.Logger;
@@ -119,6 +121,88 @@ public class ChatPavilion implements ChatRoom {
             DaoManager.getMemberDao().updateMember(memberInfo);
             synchronized (memberMap) {
                 memberMap.put(memberInfo.getUserUUID(), memberInfo);
+            }
+        }
+    }
+
+    /**
+     * 添加成员
+     * 主动操作，只有房主或管理员才可用
+     *
+     * @param memberInfo 成员信息
+     */
+    @Override
+    public void addMember(MemberInfo memberInfo) throws Exception {
+        Objects.requireNonNull(memberInfo);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            // 检查是否是房主
+            if (!Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
+                throw new Exception("Not the homeowner");
+            }
+            if (memberInfo.getUserUUID() == null) {
+                throw new Exception("User uuid is null");
+            } else if (memberInfo.getNickname() == null) {
+                NodeInfo nodeInfo = DaoManager.getNodeInfoDao().getByUUID(memberInfo.getUserUUID());
+                if (nodeInfo == null || nodeInfo.getAttr(NodeAttributes.$TITLE) == null) {
+                    memberInfo.setNickname(memberInfo.getUserUUID());
+                } else {
+                    memberInfo.setNickname(nodeInfo.getAttr(NodeAttributes.$TITLE));
+                }
+            }
+            if (memberInfo.getNickname().length() > Constants.MAX_NICKNAME_LENGTH) {
+                throw new Exception("Nickname length out of range " + Constants.MAX_NICKNAME_LENGTH);
+            }
+            memberInfo.setNodeUUID(roomInfo.getNodeUUID())
+                    .setRoomUUID(roomInfo.getRoomUUID())
+                    .setUpdateTime(System.currentTimeMillis());
+            synchronized (memberMap) {
+                if (memberMap.containsKey(memberInfo.getUserUUID())) {
+                    throw new Exception("Member already exists");
+                }
+                memberMap.put(memberInfo.getUserUUID(), memberInfo);
+                DaoManager.getMemberDao().updateMember(memberInfo);
+            }
+        }
+        // 推送新成员
+        synchronized (onlineNodeMap) {
+            for (Node node : onlineNodeMap.values()) {
+                node.addTask(new PushTask(memberInfo, null));
+            }
+        }
+    }
+
+    /**
+     * 移除成员
+     *
+     * @param memberInfo 成员信息
+     */
+    @Override
+    public void removeMember(MemberInfo memberInfo) throws Exception {
+        Objects.requireNonNull(memberInfo);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            memberInfo.check();
+            // 检查是否是房主
+            if (!Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
+                throw new Exception("Not the homeowner");
+            }
+            synchronized (memberMap) {
+                if (memberMap.containsKey(memberInfo.getUserUUID())) {
+                    throw new Exception("Member already remove");
+                }
+                memberMap.remove(memberInfo.getUserUUID());
+                DaoManager.getMemberDao().deleteMember(memberInfo);
+            }
+        }
+        // 推送更新
+        synchronized (onlineNodeMap) {
+            for (Node node : onlineNodeMap.values()) {
+                // TODO: 2022/5/28  
             }
         }
     }
@@ -315,8 +399,8 @@ public class ChatPavilion implements ChatRoom {
                     throw new Exception("Room is not available");
                 }
                 Objects.requireNonNull(content);
-                if (content.length() > Constants.MAX_TEXT_MSG_LENGTH) {
-                    throw new Exception("Message length out of range " + Constants.MAX_TEXT_MSG_LENGTH);
+                if (content.length() > Constants.MAX_MSG_PAYLOAD_LENGTH) {
+                    throw new Exception("Message length out of range " + Constants.MAX_MSG_PAYLOAD_LENGTH);
                 }
                 MessageInfo msg = new MessageInfo()
                         .setNodeUUID(roomInfo.getNodeUUID())

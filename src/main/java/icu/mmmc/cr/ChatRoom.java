@@ -23,6 +23,20 @@ public interface ChatRoom {
     RoomInfo getRoomInfo();
 
     /**
+     * 添加成员
+     *
+     * @param memberInfo 成员信息
+     */
+    void addMember(MemberInfo memberInfo) throws Exception;
+
+    /**
+     * 移除成员
+     *
+     * @param memberInfo 成员信息
+     */
+    void removeMember(MemberInfo memberInfo) throws Exception;
+
+    /**
      * 是否存在成员
      *
      * @param uuid 成员标识码

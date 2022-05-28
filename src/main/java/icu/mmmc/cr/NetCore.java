@@ -32,7 +32,7 @@ class NetCore {
         if (isRun) {
             return;
         }
-        Logger.info("init");
+        Logger.info("Init");
         selector = Selector.open();
         if (port >= 0 && port < 65536) {
             serverSocketChannel = ServerSocketChannel.open();
@@ -47,19 +47,19 @@ class NetCore {
         loopThread = new Thread(NetCore::loop);
         loopThread.setName("NetLoop-thread");
         loopThread.start();
-        Logger.info("init done");
+        Logger.info("Init done");
     }
 
     /**
      * 网络轮询
      */
     private static void loop() {
-        Logger.info("start loop");
+        Logger.info("Start loop");
         Set<SelectionKey> selectionKeySet = selector.selectedKeys();
         while (isRun) {
             try {
                 synchronized (REG_LOCK) {
-                    Logger.debug("select");
+                    Logger.debug("Select");
                 }
                 selector.select();
             } catch (Exception e) {
@@ -72,7 +72,7 @@ class NetCore {
                 SelectionKey key = iterator.next();
                 iterator.remove();
                 if (key.isAcceptable()) {
-                    Logger.debug("accept");
+                    Logger.debug("Accept");
                     ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
                     try {
                         SocketChannel channel = serverChannel.accept();
@@ -92,12 +92,12 @@ class NetCore {
                 }
                 try {
                     if (key.isReadable()) {
-                        Logger.debug("read");
+                        Logger.debug("Read");
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
                         WorkerThreadPool.execute(() -> ((Node) key.attachment()).doRead());
                     }
                     if (key.isWritable()) {
-                        Logger.debug("write");
+                        Logger.debug("Write");
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
                         WorkerThreadPool.execute(() -> ((Node) key.attachment()).doPost());
                     }
@@ -116,7 +116,7 @@ class NetCore {
      */
     public static SelectionKey register(SocketChannel channel) throws Exception {
         synchronized (REG_LOCK) {
-            Logger.debug("register");
+            Logger.debug("Register");
             selector.wakeup();
             return channel.register(selector, 0);
         }
@@ -129,7 +129,7 @@ class NetCore {
         if (!isRun) {
             return;
         }
-        Logger.info("halt");
+        Logger.info("Halt");
         if (serverSocketChannel != null) {
             try {
                 serverSocketChannel.close();
@@ -147,6 +147,6 @@ class NetCore {
         }
         selector = null;
         loopThread = null;
-        Logger.info("halt done");
+        Logger.info("Halt done");
     }
 }

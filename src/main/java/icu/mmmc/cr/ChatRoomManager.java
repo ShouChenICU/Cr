@@ -124,18 +124,14 @@ public final class ChatRoomManager {
      * @param nodeUUID 所属节点标识码
      */
     static synchronized ChatRoom createChatRoom(String nodeUUID, String title) throws Exception {
-        if (title != null) {
-            if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
-                throw new Exception("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
-            }
+        Objects.requireNonNull(title);
+        if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
+            throw new Exception("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
         }
         String uuid = UUID.randomUUID().toString();
         synchronized (MANAGE_ROOM_MAP) {
             while (MANAGE_ROOM_MAP.get(uuid) != null) {
                 uuid = UUID.randomUUID().toString();
-            }
-            if (title == null) {
-                title = uuid;
             }
             RoomInfo roomInfo = new RoomInfo()
                     .setNodeUUID(nodeUUID)
