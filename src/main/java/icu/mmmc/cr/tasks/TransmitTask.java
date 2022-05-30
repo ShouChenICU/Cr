@@ -31,18 +31,9 @@ public abstract class TransmitTask extends AbstractTask {
      * 传输实体类型
      */
     protected int entityType;
-    /**
-     * 已处理的数据长度
-     */
-    protected int processedLength;
-    /**
-     * 数据
-     */
-    protected byte[] data;
 
     public TransmitTask(ProgressCallback callback) {
         super(callback);
         entityType = 0;
-        processedLength = 0;
     }
 }

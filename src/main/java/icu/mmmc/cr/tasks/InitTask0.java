@@ -1,7 +1,6 @@
 package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.Cr;
-import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.Version;
 import icu.mmmc.cr.callbacks.NewConnectionCallback;
 import icu.mmmc.cr.constants.NodeAttributes;
@@ -14,7 +13,6 @@ import icu.mmmc.cr.utils.Logger;
 import org.bson.BSONObject;
 
 import javax.crypto.Cipher;
-import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
@@ -40,40 +38,26 @@ public class InitTask0 extends AbstractTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) throws Exception {
         if (stepCount == 0) {
             stepCount = 1;
-            BSONObject object = BsonUtils.deserialize(packetBody.getPayload());
+            BSONObject object = BsonUtils.deserialize(data);
             // 验证协议版本
             if (!Objects.equals(object.get("PROTOCOL"), Version.PATCH_VERSION)) {
                 String s = "protocol version error";
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setTaskType(TaskTypes.ERROR)
-                        .setPayload(s.getBytes(StandardCharsets.UTF_8)));
+                sendError(s);
                 halt(s);
             } else {
                 // 发送公钥
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setPayload(Cr.getNodeInfo().getPublicKey().getEncoded()));
+                sendData(TaskTypes.ACK, Cr.getNodeInfo().getPublicKey().getEncoded());
                 // 拿到对方公钥
                 byte[] pubKeyCode = (byte[]) object.get("PUB_KEY");
-                try {
-                    publicKey = KeyUtils.getPubKeyByCode(pubKeyCode);
-                } catch (Exception e) {
-                    Logger.warn(e);
-                    halt(e.toString());
-                    return;
-                }
+                publicKey = KeyUtils.getPubKeyByCode(pubKeyCode);
                 // 解析uuid
                 String uuid = UUID.nameUUIDFromBytes(pubKeyCode).toString();
                 // 尝试从数据库获取节点信息
@@ -105,45 +89,30 @@ public class InitTask0 extends AbstractTask {
         } else if (stepCount == 1) {
             stepCount = 2;
             // 拿到加密后的AES密钥
-            byte[] bytes = packetBody.getPayload();
-            try {
-                Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
-                cipher.init(Cipher.DECRYPT_MODE, Cr.getPrivateKey());
-                // 解密AES密钥
-                bytes = cipher.doFinal(bytes);
-                // 更新AES密钥
-                node.getEncryptor().updateKey(KeyUtils.getAESKey(bytes));
-                // 验证连接者身份
-                Random random = new Random();
-                // 生成随机验证码
-                authCode = new byte[random.nextInt(64) + 64];
-                random.nextBytes(authCode);
-                // 用对方公钥初始化加密器
-                cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-                // 用对方公钥加密并发送验证码
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setPayload(cipher.doFinal(authCode)));
-            } catch (Exception e) {
-                Logger.warn(e);
-                halt(e.toString());
-            }
+            byte[] bytes = data;
+            Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, Cr.getPrivateKey());
+            // 解密AES密钥
+            bytes = cipher.doFinal(bytes);
+            // 更新AES密钥
+            node.getEncryptor().updateKey(KeyUtils.getAESKey(bytes));
+            // 验证连接者身份
+            Random random = new Random();
+            // 生成随机验证码
+            authCode = new byte[random.nextInt(64) + 64];
+            random.nextBytes(authCode);
+            // 用对方公钥初始化加密器
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            // 用对方公钥加密并发送验证码
+            sendData(TaskTypes.ACK, cipher.doFinal(authCode));
         } else if (stepCount == 2) {
-            byte[] bytes = packetBody.getPayload();
             // 验证对方发来的验证码
-            if (Arrays.equals(bytes, authCode)) {
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource()));
+            if (Arrays.equals(data, authCode)) {
+                sendData(TaskTypes.ACK, null);
                 done();
             } else {
                 String s = "身份验证失败";
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setTaskType(TaskTypes.ERROR)
-                        .setPayload(s.getBytes(StandardCharsets.UTF_8)));
+                sendError(s);
                 halt(s);
             }
         } else {

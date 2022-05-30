@@ -8,9 +8,18 @@ import icu.mmmc.cr.callbacks.ProgressCallback;
  *
  * @author shouchen
  */
-public class RequestTask extends AbstractTask{
+public class RequestTask extends AbstractTask {
     public RequestTask(ProgressCallback callback) {
         super(callback);
+    }
+
+    /**
+     * 处理数据
+     *
+     * @param data 数据
+     */
+    @Override
+    protected void handleData(byte[] data) throws Exception {
     }
 
     @Override

@@ -17,13 +17,12 @@ public class SyncRoomTask1 extends AbstractTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) {
         done();
     }
 

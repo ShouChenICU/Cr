@@ -1,14 +1,9 @@
 package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.Node;
-import icu.mmmc.cr.PacketBody;
-import icu.mmmc.cr.entities.Serialization;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.TaskTypes;
-import icu.mmmc.cr.entities.MemberInfo;
-import icu.mmmc.cr.entities.MessageInfo;
-import icu.mmmc.cr.entities.NodeInfo;
-import icu.mmmc.cr.entities.RoomInfo;
+import icu.mmmc.cr.entities.*;
 import icu.mmmc.cr.exceptions.UnknownEntityTypeException;
 import icu.mmmc.cr.utils.BsonObject;
 
@@ -21,6 +16,7 @@ import java.util.Objects;
  * @author shouchen
  */
 public class PushTask extends TransmitTask {
+    private final byte[] entityData;
 
     public PushTask(Serialization entity, ProgressCallback callback) throws Exception {
         super(callback);
@@ -39,45 +35,29 @@ public class PushTask extends TransmitTask {
         } else {
             throw new UnknownEntityTypeException();
         }
-        data = entity.serialize();
-        if (data.length > MAX_DATA_LENGTH) {
+        entityData = entity.serialize();
+        if (entityData.length > MAX_DATA_LENGTH) {
             throw new Exception("Data length out of range");
         }
     }
 
+    /**
+     * 处理数据
+     *
+     * @param data 数据
+     */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
-        if (processedLength == data.length) {
-            done();
-        } else {
-            int len = Math.min((data.length - processedLength), 64000);
-            byte[] buf = new byte[len];
-            System.arraycopy(data, 0, buf, 0, len);
-            processedLength += len;
-            node.postPacket(
-                    new PacketBody()
-                            .setSource(taskId)
-                            .setDestination(packetBody.getSource())
-                            .setPayload(buf)
-            );
-        }
+    protected void handleData(byte[] data) {
+        sendData(TaskTypes.ACK, entityData);
+        done();
     }
 
     @Override
     public void init(Node node, int taskId) {
         super.init(node, taskId);
-        node.postPacket(
-                new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(0)
-                        .setTaskType(TaskTypes.PUSH)
-                        .setPayload(
-                                new BsonObject()
-                                        .set(ENTITY_TYPE, entityType)
-                                        .set(DATA_LENGTH, data.length)
-                                        .serialize()
-                        )
-        );
+        sendData(TaskTypes.PUSH, new BsonObject()
+                .set(ENTITY_TYPE, entityType)
+                .set(DATA_LENGTH, entityData.length)
+                .serialize());
     }
 }

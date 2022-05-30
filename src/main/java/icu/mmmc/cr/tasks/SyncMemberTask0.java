@@ -2,7 +2,6 @@ package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.ChatRoom;
 import icu.mmmc.cr.ChatRoomManager;
-import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 
@@ -24,32 +23,24 @@ public class SyncMemberTask0 extends AbstractTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) throws Exception {
         if (stepCount == 0) {
-            String roomUUID = new String(packetBody.getPayload(), StandardCharsets.UTF_8);
+            String roomUUID = new String(data, StandardCharsets.UTF_8);
             ChatRoom chatRoom = ChatRoomManager.getByRoomUUID(roomUUID);
             if (chatRoom == null) {
                 String err = "Room not found";
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setTaskType(TaskTypes.ERROR)
-                        .setPayload(err.getBytes(StandardCharsets.UTF_8)));
+                sendError(err);
                 halt(err);
                 return;
             }
             memberInfoList = chatRoom.getMemberList();
             stepCount = 1;
-            node.postPacket(new PacketBody()
-                    .setSource(taskId)
-                    .setDestination(packetBody.getSource())
-                    .setTaskType(TaskTypes.ACK));
+            sendData(TaskTypes.ACK, null);
         } else if (stepCount == 1) {
 
         }

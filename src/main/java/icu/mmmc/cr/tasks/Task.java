@@ -22,7 +22,7 @@ public interface Task {
     void handlePacket(PacketBody packetBody) throws Exception;
 
     /**
-     * 终止
+     * 终止任务
      *
      * @param msg 错误信息
      */

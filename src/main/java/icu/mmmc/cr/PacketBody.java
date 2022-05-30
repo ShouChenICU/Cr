@@ -1,9 +1,9 @@
 package icu.mmmc.cr;
 
 import icu.mmmc.cr.entities.Serialization;
+import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
 import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 
 /**
  * 网络传输帧
@@ -25,6 +25,10 @@ public class PacketBody implements Serialization {
      */
     private int taskType;
     /**
+     * 分包标记
+     */
+    private boolean isMulti;
+    /**
      * 负载数据
      */
     private byte[] payload;
@@ -33,6 +37,7 @@ public class PacketBody implements Serialization {
         source = 0;
         destination = 0;
         taskType = 0;
+        isMulti = false;
         payload = null;
     }
 
@@ -41,6 +46,7 @@ public class PacketBody implements Serialization {
         source = (int) object.get("SOURCE");
         destination = (int) object.get("DESTINATION");
         taskType = (int) object.get("TASK_TYPE");
+        isMulti = (boolean) object.get("IS_MULTI");
         payload = (byte[]) object.get("PAYLOAD");
     }
 
@@ -71,6 +77,15 @@ public class PacketBody implements Serialization {
         return this;
     }
 
+    public PacketBody setMulti(boolean multi) {
+        isMulti = multi;
+        return this;
+    }
+
+    public boolean isMulti() {
+        return isMulti;
+    }
+
     public byte[] getPayload() {
         return payload;
     }
@@ -87,11 +102,12 @@ public class PacketBody implements Serialization {
      */
     @Override
     public byte[] serialize() {
-        BSONObject object = new BasicBSONObject();
-        object.put("SOURCE", source);
-        object.put("DESTINATION", destination);
-        object.put("TASK_TYPE", taskType);
-        object.put("PAYLOAD", payload);
-        return BsonUtils.serialize(object);
+        return new BsonObject()
+                .set("SOURCE", source)
+                .set("DESTINATION", destination)
+                .set("TASK_TYPE", taskType)
+                .set("IS_MULTI", isMulti)
+                .set("PAYLOAD", payload)
+                .serialize();
     }
 }

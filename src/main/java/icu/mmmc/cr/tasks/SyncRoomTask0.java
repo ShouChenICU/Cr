@@ -2,7 +2,6 @@ package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.Node;
-import icu.mmmc.cr.PacketBody;
 import icu.mmmc.cr.WorkerThreadPool;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -27,13 +26,12 @@ public class SyncRoomTask0 extends AbstractTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) throws Exception {
         while (!roomInfoList.isEmpty()) {
             RoomInfo roomInfo = roomInfoList.remove(0);
             node.addTask(new PushTask(roomInfo, new ProgressAdapter() {
@@ -51,10 +49,7 @@ public class SyncRoomTask0 extends AbstractTask {
         WorkerThreadPool.execute(() -> {
             try {
                 latch.await();
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setTaskType(TaskTypes.ACK));
+                sendData(TaskTypes.ACK, null);
                 done();
             } catch (InterruptedException e) {
                 Logger.warn(e);

@@ -37,27 +37,19 @@ public class InitTask1 extends AbstractTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) throws Exception {
         if (stepCount == 0) {
             stepCount = 1;
             // 拿到公钥
-            byte[] pubKeyCode = packetBody.getPayload();
             PublicKey publicKey;
-            try {
-                publicKey = KeyUtils.getPubKeyByCode(pubKeyCode);
-            } catch (Exception e) {
-                Logger.warn(e);
-                halt(e.toString());
-                return;
-            }
+            publicKey = KeyUtils.getPubKeyByCode(data);
             // 解析uuid
-            String uuid = UUID.nameUUIDFromBytes(pubKeyCode).toString();
+            String uuid = UUID.nameUUIDFromBytes(data).toString();
             // 尝试从数据库获取节点信息
             nodeInfo = DaoManager.getNodeInfoDao().getByUUID(uuid);
             NewConnectionCallback newConnectionCallback = Cr.CallBack.newConnectionCallback;
@@ -93,7 +85,7 @@ public class InitTask1 extends AbstractTask {
                 SecretKey key = KeyUtils.genAESKey();
                 byte[] bytes = new PacketBody()
                         .setSource(taskId)
-                        .setDestination(packetBody.getSource())
+                        .setDestination(destinationId)
                         // 用RSA公钥加密
                         .setPayload(cipher.doFinal(key.getEncoded()))
                         .serialize();
@@ -109,16 +101,13 @@ public class InitTask1 extends AbstractTask {
         } else if (stepCount == 1) {
             stepCount = 2;
             // 拿到加密后的验证码
-            byte[] bytes = packetBody.getPayload();
+            byte[] bytes = data;
             try {
                 Cipher cipher = Cipher.getInstance(RSA_CIPHER_ALGORITHM);
                 cipher.init(Cipher.DECRYPT_MODE, Cr.getPrivateKey());
                 // 用自己的私钥解密
                 bytes = cipher.doFinal(bytes);
-                node.postPacket(new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setPayload(bytes));
+                sendData(TaskTypes.ACK, bytes);
             } catch (Exception e) {
                 Logger.warn(e);
                 halt(e.toString());
@@ -135,25 +124,17 @@ public class InitTask1 extends AbstractTask {
         this.node = node;
         this.taskId = taskId;
         Random random = new Random();
-        byte[] b = new byte[random.nextInt(256) + 1];
+        byte[] b = new byte[random.nextInt(1024) + 1];
         random.nextBytes(b);
-        node.postPacket(
-                new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(0)
-                        .setTaskType(TaskTypes.INIT)
-                        .setPayload(
-                                new BsonObject()
-                                        .set("", b)
-                                        .set("PROTOCOL", Version.PROTOCOL_VERSION)
-                                        .set("PUB_KEY",
-                                                Cr.getNodeInfo()
-                                                        .getPublicKey()
-                                                        .getEncoded()
-                                        )
-                                        .serialize()
-                        )
-        );
+        sendData(TaskTypes.INIT, new BsonObject()
+                .set("", b)
+                .set("PROTOCOL", Version.PROTOCOL_VERSION)
+                .set("PUB_KEY",
+                        Cr.getNodeInfo()
+                                .getPublicKey()
+                                .getEncoded()
+                )
+                .serialize());
     }
 
     @Override

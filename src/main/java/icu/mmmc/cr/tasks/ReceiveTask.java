@@ -1,6 +1,9 @@
 package icu.mmmc.cr.tasks;
 
-import icu.mmmc.cr.*;
+import icu.mmmc.cr.ChatPavilion;
+import icu.mmmc.cr.ChatRoomManager;
+import icu.mmmc.cr.Cr;
+import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
@@ -10,7 +13,6 @@ import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.Logger;
 import org.bson.BSONObject;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -19,6 +21,7 @@ import java.util.Objects;
  * @author shouchen
  */
 public class ReceiveTask extends TransmitTask {
+    private byte[] entityData;
     private int stepCount;
 
     public ReceiveTask() {
@@ -27,15 +30,14 @@ public class ReceiveTask extends TransmitTask {
     }
 
     /**
-     * 处理包
+     * 处理数据
      *
-     * @param packetBody 包
+     * @param data 数据
      */
     @Override
-    public void handlePacket(PacketBody packetBody) throws Exception {
-        super.handlePacket(packetBody);
+    protected void handleData(byte[] data) {
         if (stepCount == 0) {
-            BSONObject object = BsonUtils.deserialize(packetBody.getPayload());
+            BSONObject object = BsonUtils.deserialize(data);
             entityType = (int) object.get(ENTITY_TYPE);
             int length = (int) object.get(DATA_LENGTH);
             if (entityType != ENTITY_NODE_INFO
@@ -43,43 +45,21 @@ public class ReceiveTask extends TransmitTask {
                     && entityType != ENTITY_MEMBER_INFO
                     && entityType != ENTITY_MESSAGE_INFO) {
                 String s = "unknown entity type";
-                node.postPacket(
-                        new PacketBody()
-                                .setSource(taskId)
-                                .setDestination(packetBody.getSource())
-                                .setTaskType(TaskTypes.ERROR)
-                                .setPayload(s.getBytes(StandardCharsets.UTF_8))
-                );
+                sendError(s);
                 halt(s);
                 return;
             } else if (length > MAX_DATA_LENGTH) {
                 String s = "Data length out of range";
-                node.postPacket(
-                        new PacketBody()
-                                .setSource(taskId)
-                                .setDestination(packetBody.getSource())
-                                .setTaskType(TaskTypes.ERROR)
-                                .setPayload(s.getBytes(StandardCharsets.UTF_8))
-                );
+                sendError(s);
                 halt(s);
                 return;
             }
-            data = new byte[length];
+            sendData(TaskTypes.ACK, null);
             stepCount = 1;
         } else {
-            byte[] buf = packetBody.getPayload();
-            System.arraycopy(buf, 0, data, processedLength, buf.length);
-            processedLength += buf.length;
-            if (processedLength == data.length) {
-                handle();
-            }
+            entityData = data;
+            handle();
         }
-        node.postPacket(
-                new PacketBody()
-                        .setSource(taskId)
-                        .setDestination(packetBody.getSource())
-                        .setTaskType(TaskTypes.ACK)
-        );
     }
 
     /**
@@ -112,7 +92,7 @@ public class ReceiveTask extends TransmitTask {
      * 节点信息接收处理
      */
     private void receiveNodeInfo() throws Exception {
-        NodeInfo nodeInfo = new NodeInfo(data);
+        NodeInfo nodeInfo = new NodeInfo(entityData);
         NodeManager.updateNodeInfo(nodeInfo);
     }
 
@@ -120,7 +100,7 @@ public class ReceiveTask extends TransmitTask {
      * 房间信息接收处理
      */
     private void receiveRoomInfo() throws Exception {
-        RoomInfo roomInfo = new RoomInfo(data);
+        RoomInfo roomInfo = new RoomInfo(entityData);
         if (!Objects.equals(roomInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
             throw new Exception("Room info illegal");
         }
@@ -131,7 +111,7 @@ public class ReceiveTask extends TransmitTask {
      * 成员信息接收处理
      */
     private void receiveMemberInfo() throws Exception {
-        MemberInfo memberInfo = new MemberInfo(data);
+        MemberInfo memberInfo = new MemberInfo(entityData);
         memberInfo.check();
         // 如果这个成员所属的房间归我管理
         if (Objects.equals(memberInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
@@ -154,7 +134,7 @@ public class ReceiveTask extends TransmitTask {
      * 消息接收处理
      */
     private void receiveMessageInfo() throws Exception {
-        MessageInfo messageInfo = new MessageInfo(data);
+        MessageInfo messageInfo = new MessageInfo(entityData);
         messageInfo.check();
         // 如果这个消息所属的房间归我管理
         if (Objects.equals(messageInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
