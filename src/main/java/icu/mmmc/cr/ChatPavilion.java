@@ -11,9 +11,11 @@ import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.tasks.PushTask;
+import icu.mmmc.cr.tasks.SyncMemberTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 聊天室实现
@@ -25,6 +27,7 @@ import java.util.*;
 public class ChatPavilion implements ChatRoom {
     private volatile boolean isAvailable;
     private final Object availLock;
+    private final ReentrantLock syncMemberLock;
     /**
      * 房间信息
      */
@@ -64,6 +67,7 @@ public class ChatPavilion implements ChatRoom {
         memberMap = new HashMap<>();
         onlineNodeMap = new HashMap<>();
         messageList = new ArrayList<>();
+        syncMemberLock = new ReentrantLock();
     }
 
     protected void disable() {
@@ -103,7 +107,7 @@ public class ChatPavilion implements ChatRoom {
             }
             roomInfo.check();
             if (!Objects.equals(roomInfo, this.roomInfo)) {
-                return;
+                throw new Exception("Room info illegal");
             }
             this.roomInfo = roomInfo;
         }
@@ -234,6 +238,10 @@ public class ChatPavilion implements ChatRoom {
                 throw new Exception("Room is not available");
             }
             memberInfo.check();
+            if (!Objects.equals(memberInfo.getNodeUUID(), roomInfo.getNodeUUID())
+                    || !Objects.equals(memberInfo.getRoomUUID(), roomInfo.getRoomUUID())) {
+                throw new Exception("Member info illegal");
+            }
             // 检查是否是房主
             if (!Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
                 throw new Exception("Not the homeowner");
@@ -250,6 +258,30 @@ public class ChatPavilion implements ChatRoom {
         synchronized (onlineNodeMap) {
             for (Node node : onlineNodeMap.values()) {
                 // TODO: 2022/5/28  
+            }
+        }
+    }
+
+    /**
+     * 删除成员
+     *
+     * @param userUUID 成员标识码
+     */
+    public void deleteMember(String userUUID) throws Exception {
+        Objects.requireNonNull(userUUID);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            synchronized (memberMap) {
+                if (memberMap.containsKey(userUUID)) {
+                    throw new Exception("Member already remove");
+                }
+                memberMap.remove(userUUID);
+                DaoManager.getMemberDao().deleteMember(new MemberInfo()
+                        .setNodeUUID(roomInfo.getNodeUUID())
+                        .setRoomUUID(roomInfo.getRoomUUID())
+                        .setUserUUID(userUUID));
             }
         }
     }
@@ -507,7 +539,14 @@ public class ChatPavilion implements ChatRoom {
                     callback.done();
                     return;
                 }
-                // TODO: 2022/5/27  
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    callback.halt("Node is offline");
+                    return;
+                }
+                if (syncMemberLock.tryLock()) {
+                    node.addTask(new SyncMemberTask1(this, callback));
+                }
             }
         } catch (Exception e) {
             Logger.warn(e);

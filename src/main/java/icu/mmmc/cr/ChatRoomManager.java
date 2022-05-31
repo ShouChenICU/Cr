@@ -6,6 +6,7 @@ import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
+import icu.mmmc.cr.tasks.SyncMemberTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
@@ -100,12 +101,15 @@ public final class ChatRoomManager {
                         return;
                     }
                 }
+                // 新房间
+                // TODO: 2022/5/31 新房间加入逻辑需要优化
                 if (Objects.requireNonNullElse(Cr.CallBack.joinNewRoomCallback, r -> false).joinNewRoom(roomInfo)) {
                     ChatPavilion chatPavilion = new ChatPavilion(roomInfo);
                     CHAT_ROOM_LIST.add(chatPavilion);
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                     if (node != null) {
                         node.getRoomMap().put(roomInfo.getRoomUUID(), chatPavilion);
+                        node.addTask(new SyncMemberTask1(chatPavilion, null));
                     }
                     Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                     Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
