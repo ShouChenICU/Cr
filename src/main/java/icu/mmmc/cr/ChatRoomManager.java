@@ -6,7 +6,6 @@ import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
-import icu.mmmc.cr.tasks.SyncMemberTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
@@ -96,6 +95,8 @@ public final class ChatRoomManager {
                         chatRoom.updateRoomInfo(roomInfo);
                         Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                         DaoManager.getRoomDao().updateRoomInfo(roomInfo);
+                        chatRoom.syncMembers(null);
+                        chatRoom.syncMessagesBeforeTime(System.currentTimeMillis(), null);
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                         }).update();
                         return;
@@ -109,8 +110,9 @@ public final class ChatRoomManager {
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                     if (node != null) {
                         node.getRoomMap().put(roomInfo.getRoomUUID(), chatPavilion);
-                        node.addTask(new SyncMemberTask1(chatPavilion, null));
                     }
+                    chatPavilion.syncMembers(null);
+                    chatPavilion.syncMessagesBeforeTime(System.currentTimeMillis(), null);
                     Logger.debug("Add a new room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                     Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                     }).update();

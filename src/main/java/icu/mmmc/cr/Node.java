@@ -215,6 +215,9 @@ public abstract class Node extends NetNode {
                 case TaskTypes.SYNC_MEMBER:
                     task = new SyncMemberTask0();
                     break;
+                case TaskTypes.SYNC_MESSAGE:
+                    task = new SyncMessageTask0();
+                    break;
                 default:
                     throw new Exception("Unknown task");
             }

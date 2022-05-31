@@ -35,4 +35,8 @@ public class TaskTypes {
      * 成员同步
      */
     public static final int SYNC_MEMBER = 5;
+    /**
+     * 消息同步
+     */
+    public static final int SYNC_MESSAGE = 6;
 }

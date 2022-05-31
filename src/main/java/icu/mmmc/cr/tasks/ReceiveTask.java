@@ -150,6 +150,6 @@ public class ReceiveTask extends TransmitTask {
         if (chatPavilion == null) {
             throw new Exception("Chat room not found");
         }
-        chatPavilion.putMessage(messageInfo);
+        chatPavilion.receiveMessage(messageInfo);
     }
 }
