@@ -135,6 +135,7 @@ public final class ChatRoomManager {
             throw new Exception("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
         }
         String uuid = UUID.randomUUID().toString();
+        ChatPavilion chatPavilion;
         synchronized (MANAGE_ROOM_MAP) {
             while (MANAGE_ROOM_MAP.get(uuid) != null) {
                 uuid = UUID.randomUUID().toString();
@@ -145,7 +146,7 @@ public final class ChatRoomManager {
                     .setTitle(title)
                     .setUpdateTime(System.currentTimeMillis());
             DaoManager.getRoomDao().updateRoomInfo(roomInfo);
-            ChatPavilion chatPavilion = new ChatPavilion(roomInfo);
+            chatPavilion = new ChatPavilion(roomInfo);
             chatPavilion.updateMemberInfo(new MemberInfo()
                     .setNodeUUID(nodeUUID)
                     .setRoomUUID(uuid)
@@ -158,7 +159,7 @@ public final class ChatRoomManager {
         }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
         }).update();
-        return null;
+        return chatPavilion;
     }
 
     /**

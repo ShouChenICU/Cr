@@ -31,6 +31,7 @@ public class ChatPavilion implements ChatRoom {
     private final Object availLock;
     private final ReentrantLock syncMemberLock;
     private final ReentrantLock syncMessageLock;
+    private int unreadCount;
     /**
      * 房间信息
      */
@@ -77,6 +78,7 @@ public class ChatPavilion implements ChatRoom {
         messageIdSet = new HashSet<>();
         syncMemberLock = new ReentrantLock();
         syncMessageLock = new ReentrantLock();
+        unreadCount = 0;
     }
 
     protected void disable() {
@@ -347,7 +349,7 @@ public class ChatPavilion implements ChatRoom {
     }
 
     /**
-     * 接收消息
+     * 收到新的消息
      * 可能操作数据库
      *
      * @param messageInfo 消息实体
@@ -371,6 +373,7 @@ public class ChatPavilion implements ChatRoom {
             synchronized (messageList) {
                 if (messageIdSet.add(messageInfo.getId())) {
                     messageList.add(messageInfo);
+                    unreadCount++;
                     messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
                     if (messageList.size() > Constants.MSG_LIST_BUF_SIZE) {
                         messageIdSet.remove(messageList.remove(0).getId());
@@ -427,9 +430,12 @@ public class ChatPavilion implements ChatRoom {
             }
             synchronized (messageList) {
                 messageList.addAll(messageInfos);
+                for (MessageInfo info : messageList) {
+                    messageIdSet.add(info.getId());
+                }
                 messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
                 while (messageList.size() > Constants.MSG_LIST_BUF_SIZE) {
-                    messageList.remove(0);
+                    messageIdSet.remove(messageList.remove(0).getId());
                 }
                 if (msgReceiveCallback != null) {
                     msgReceiveCallback.receiveMsg(messageList.get(messageList.size() - 1));
@@ -505,6 +511,42 @@ public class ChatPavilion implements ChatRoom {
         synchronized (messageList) {
             return new ArrayList<>(messageList);
         }
+    }
+
+    /**
+     * 获取最新消息
+     *
+     * @return 最新消息
+     */
+    @Override
+    public MessageInfo getLatestMessage() {
+        synchronized (messageList) {
+            if (messageList.isEmpty()) {
+                return null;
+            } else {
+                return messageList.get(messageList.size() - 1);
+            }
+        }
+    }
+
+    /**
+     * 获取未读消息数量
+     *
+     * @return 未读消息数
+     */
+    @Override
+    public int getUnreadCount() {
+        return unreadCount;
+    }
+
+    /**
+     * 设置未读消息数量
+     *
+     * @param unreadCount 未读消息数量
+     */
+    @Override
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
     }
 
     /**

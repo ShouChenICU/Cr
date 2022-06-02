@@ -81,6 +81,27 @@ public interface ChatRoom {
     List<MessageInfo> getMessageList();
 
     /**
+     * 获取最新消息
+     *
+     * @return 最新消息
+     */
+    MessageInfo getLatestMessage();
+
+    /**
+     * 获取未读消息数量
+     *
+     * @return 未读消息数
+     */
+    int getUnreadCount();
+
+    /**
+     * 设置未读消息数量
+     *
+     * @param unreadCount 未读消息数量
+     */
+    void setUnreadCount(int unreadCount);
+
+    /**
      * 发送文本消息
      *
      * @param content  文本消息内容
