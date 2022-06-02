@@ -50,7 +50,7 @@ public class RoomDaoAdapter implements RoomDao {
      * @return 全部房间信息列表
      */
     @Override
-    public List<RoomInfo> getAll() {
+    public List<RoomInfo> getAllRoomInfos() {
         return new ArrayList<>();
     }
 

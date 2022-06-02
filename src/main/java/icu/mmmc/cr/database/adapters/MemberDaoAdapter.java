@@ -39,7 +39,7 @@ public class MemberDaoAdapter implements MemberDao {
      * @return 成员列表
      */
     @Override
-    public List<MemberInfo> getMemberList(String nodeUUID, String roomUUID) {
+    public List<MemberInfo> getMembers(String nodeUUID, String roomUUID) {
         return new ArrayList<>();
     }
 }

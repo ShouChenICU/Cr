@@ -225,13 +225,13 @@ public class Cr {
          *
          * @return 聊天室列表
          */
-        public static List<ChatRoom> getAllChatRoomList() {
+        public static List<ChatRoom> getAllChatRooms() {
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
                     return new ArrayList<>();
                 }
-                return ChatRoomManager.getAllChatRoomList();
+                return ChatRoomManager.getAllChatRooms();
             }
         }
 

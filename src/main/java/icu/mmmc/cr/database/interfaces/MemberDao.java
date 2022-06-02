@@ -32,5 +32,5 @@ public interface MemberDao {
      * @param roomUUID 房间标识码
      * @return 成员列表
      */
-    List<MemberInfo> getMemberList(String nodeUUID, String roomUUID);
+    List<MemberInfo> getMembers(String nodeUUID, String roomUUID);
 }

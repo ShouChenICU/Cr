@@ -40,7 +40,7 @@ public interface RoomDao {
      *
      * @return 全部房间信息列表
      */
-    List<RoomInfo> getAll();
+    List<RoomInfo> getAllRoomInfos();
 
     /**
      * 获取指定房主并且包含指定成员的房间信息列表

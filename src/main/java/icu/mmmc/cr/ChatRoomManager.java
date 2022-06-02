@@ -207,13 +207,13 @@ public final class ChatRoomManager {
             return;
         }
         String uuid = nodeInfo.getUuid();
-        List<RoomInfo> roomInfoList = DaoManager.getRoomDao().getAll();
+        List<RoomInfo> roomInfoList = DaoManager.getRoomDao().getAllRoomInfos();
         synchronized (MANAGE_ROOM_MAP) {
             synchronized (CHAT_ROOM_LIST) {
                 for (RoomInfo roomInfo : roomInfoList) {
                     try {
                         ChatPavilion chatRoom = new ChatPavilion(roomInfo);
-                        chatRoom.setMemberList(memberDao.getMemberList(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
+                        chatRoom.setMemberList(memberDao.getMembers(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
                         chatRoom.putMessageList(
                                 DaoManager.getMessageDao()
                                         .getMessagesBeforeTime(
@@ -263,7 +263,7 @@ public final class ChatRoomManager {
      *
      * @return 房间列表
      */
-    static List<ChatRoom> getAllChatRoomList() {
+    static List<ChatRoom> getAllChatRooms() {
         synchronized (CHAT_ROOM_LIST) {
             return Collections.unmodifiableList(CHAT_ROOM_LIST);
         }
