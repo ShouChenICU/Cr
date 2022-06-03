@@ -188,7 +188,7 @@ public final class ChatRoomManager {
                     }
                 }
                 MANAGE_ROOM_MAP.remove(roomUUID);
-                DaoManager.getRoomDao().deleteRoom(nodeUUID, roomUUID);
+                DaoManager.getRoomDao().deleteRoomInfo(nodeUUID, roomUUID);
             }
         }
         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {

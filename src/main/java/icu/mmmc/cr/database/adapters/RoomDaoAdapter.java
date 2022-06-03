@@ -20,7 +20,7 @@ public class RoomDaoAdapter implements RoomDao {
      * @param roomUUID 房间标识码
      */
     @Override
-    public void deleteRoom(String nodeUUID, String roomUUID) {
+    public void deleteRoomInfo(String nodeUUID, String roomUUID) {
     }
 
     /**

@@ -272,7 +272,7 @@ public class Cr {
      */
     public static class CallBack {
         public static NewConnectionCallback newConnectionCallback;
-        public static NodeUpdateCallback nodeUpdateCallback;
+        public static NodeStatusUpdateCallback nodeStatusUpdateCallback;
         public static ChatRoomUpdateCallback chatRoomUpdateCallback;
         public static JoinNewRoomCallback joinNewRoomCallback;
     }

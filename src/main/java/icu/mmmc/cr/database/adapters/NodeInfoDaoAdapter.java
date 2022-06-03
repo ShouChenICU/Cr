@@ -3,6 +3,9 @@ package icu.mmmc.cr.database.adapters;
 import icu.mmmc.cr.database.interfaces.NodeInfoDao;
 import icu.mmmc.cr.entities.NodeInfo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 节点信息访问适配器
  *
@@ -37,5 +40,15 @@ public class NodeInfoDaoAdapter implements NodeInfoDao {
     @Override
     public NodeInfo getByUUID(String uuid) {
         return null;
+    }
+
+    /**
+     * 获取全部已保存的节点信息
+     *
+     * @return 节点信息列表
+     */
+    @Override
+    public List<NodeInfo> getAllNodeInfos() {
+        return new ArrayList<>();
     }
 }

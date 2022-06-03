@@ -69,7 +69,7 @@ public class InitTask0 extends AbstractTask {
                         halt("连接被拒绝");
                     } else {
                         // 询问用户是否允许连接
-                        if (newConnectionCallback.newConnection(uuid, true)) {
+                        if (newConnectionCallback.newConnection(uuid, uuid, true)) {
                             // 生成一个临时节点信息
                             nodeInfo = new NodeInfo()
                                     .setUuid(uuid)
@@ -80,7 +80,7 @@ public class InitTask0 extends AbstractTask {
                     }
                 } else {
                     if (newConnectionCallback != null) {
-                        if (!newConnectionCallback.newConnection(nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
+                        if (!newConnectionCallback.newConnection(uuid, nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
                             halt("连接被拒绝");
                         }
                     }

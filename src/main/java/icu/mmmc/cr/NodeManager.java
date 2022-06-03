@@ -1,5 +1,6 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.callbacks.NodeStatusUpdateCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -124,8 +125,10 @@ public final class NodeManager {
                             heartTest(this);
                             Logger.info("Connected to " + uuid);
                             finalCallback.done();
-                            Objects.requireNonNullElse(Cr.CallBack.nodeUpdateCallback, () -> {
-                            }).update();
+                            NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
+                            if (callback1 != null) {
+                                callback1.connected(nodeInfo);
+                            }
                             checkTaskTimeOut();
                             // 连接成功后给对方推送自己的完整信息
                             addTask(new PushTask(Cr.getNodeInfo(), null));
@@ -157,8 +160,10 @@ public final class NodeManager {
                     synchronized (NODE_MAP) {
                         if (NODE_MAP.remove(uuid) != null) {
                             Logger.debug("Remove " + nodeInfo.getUuid());
-                            Objects.requireNonNullElse(Cr.CallBack.nodeUpdateCallback, () -> {
-                            }).update();
+                            NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
+                            if (callback1 != null) {
+                                callback1.disconnected(nodeInfo);
+                            }
                         }
                     }
                     ChatRoomManager.unregisterNode(uuid);

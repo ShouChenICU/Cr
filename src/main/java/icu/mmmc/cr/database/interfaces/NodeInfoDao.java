@@ -2,6 +2,8 @@ package icu.mmmc.cr.database.interfaces;
 
 import icu.mmmc.cr.entities.NodeInfo;
 
+import java.util.List;
+
 /**
  * 节点信息数据访问接口
  *
@@ -30,4 +32,11 @@ public interface NodeInfoDao {
      * @return 节点信息
      */
     NodeInfo getByUUID(String uuid);
+
+    /**
+     * 获取全部已保存的节点信息
+     *
+     * @return 节点信息列表
+     */
+    List<NodeInfo> getAllNodeInfos();
 }

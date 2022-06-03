@@ -17,7 +17,7 @@ public interface RoomDao {
      * @param nodeUUID 所属节点标识码
      * @param roomUUID 房间标识码
      */
-    void deleteRoom(String nodeUUID, String roomUUID);
+    void deleteRoomInfo(String nodeUUID, String roomUUID);
 
     /**
      * 更新或者新增房间信息
