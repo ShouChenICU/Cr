@@ -1,6 +1,11 @@
 package icu.mmmc.cr;
 
+import icu.mmmc.cr.entities.Checkable;
+import icu.mmmc.cr.entities.Serialization;
+import icu.mmmc.cr.utils.BsonObject;
+import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.Logger;
+import org.bson.BSONObject;
 
 /**
  * 核心配置类
@@ -8,7 +13,7 @@ import icu.mmmc.cr.utils.Logger;
  * @author shouchen
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public class Configuration {
+public class Configuration implements Serialization, Checkable {
     private static final int DEFAULT_PORT = 4224;
     /**
      * 是否监听连接请求
@@ -42,9 +47,18 @@ public class Configuration {
         logLevel = Logger.INFO;
     }
 
+    public Configuration(byte[] dat) {
+        BSONObject object = BsonUtils.deserialize(dat);
+        isListen = (boolean) object.get("IS_LISTEN");
+        listenPort = (int) object.get("LISTEN_PORT");
+        workerThreadPoolSize = (int) object.get("WORKER_THREAD_POOL_SIZE");
+        logLevel = (int) object.get("LOG_LEVEL");
+    }
+
     /**
      * 检查配置完整性
      */
+    @Override
     public void check() throws Exception {
         if (listenPort < 1 || listenPort > 65535) {
             throw new Exception("端口范围错误(1-65535): " + listenPort);
@@ -88,5 +102,20 @@ public class Configuration {
     public Configuration setLogLevel(int logLevel) {
         this.logLevel = logLevel;
         return this;
+    }
+
+    /**
+     * 序列化为Bson数据
+     *
+     * @return 序列化数据
+     */
+    @Override
+    public byte[] serialize() {
+        return new BsonObject()
+                .set("IS_LISTEN", isListen)
+                .set("LISTEN_PORT", listenPort)
+                .set("WORKER_THREAD_POOL_SIZE", workerThreadPoolSize)
+                .set("LOG_LEVEL", logLevel)
+                .serialize();
     }
 }
