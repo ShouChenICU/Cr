@@ -102,17 +102,18 @@ public class Cr {
         /**
          * 连接到一个节点
          *
-         * @param address  *网络地址
-         * @param callback 回调
+         * @param address    *网络地址
+         * @param expectUUID 期望节点标识码
+         * @param callback   回调
          */
-        public static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+        public static void connectToNode(InetSocketAddress address, String expectUUID, ProgressCallback callback) {
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
                     callback.halt("Cr not initialized");
                     return;
                 }
-                NodeManager.connectToNode(address, callback);
+                NodeManager.connectToNode(address, expectUUID, callback);
             }
         }
 

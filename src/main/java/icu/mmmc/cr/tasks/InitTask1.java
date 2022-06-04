@@ -17,6 +17,7 @@ import icu.mmmc.cr.utils.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.PublicKey;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -28,11 +29,13 @@ import java.util.UUID;
 @SuppressWarnings("DuplicatedCode")
 public class InitTask1 extends AbstractTask {
     private static final String RSA_CIPHER_ALGORITHM = "RSA/ECB/PKCS1Padding";
+    private final String expectUUID;
     private int stepCount;
     private NodeInfo nodeInfo;
 
-    public InitTask1(ProgressCallback callback) {
+    public InitTask1(String uuid, ProgressCallback callback) {
         super(callback);
+        expectUUID = uuid;
         stepCount = 0;
     }
 
@@ -50,6 +53,10 @@ public class InitTask1 extends AbstractTask {
             publicKey = KeyUtils.getPubKeyByCode(data);
             // 解析uuid
             String uuid = UUID.nameUUIDFromBytes(data).toString();
+            if (expectUUID != null && !Objects.equals(expectUUID, uuid)) {
+                halt("预期UUID:" + expectUUID + " 连接UUID:" + uuid);
+                return;
+            }
             // 尝试从数据库获取节点信息
             nodeInfo = DaoManager.getNodeInfoDao().getByUUID(uuid);
             NewConnectionCallback newConnectionCallback = Cr.CallBack.newConnectionCallback;

@@ -61,10 +61,11 @@ public final class NodeManager {
     /**
      * 连接到一个节点
      *
-     * @param address  *网络地址
-     * @param callback 回调
+     * @param address    *网络地址
+     * @param expectUUID 期望连接的节点标识码
+     * @param callback   回调
      */
-    static void connectToNode(InetSocketAddress address, ProgressCallback callback) {
+    static void connectToNode(InetSocketAddress address, String expectUUID, ProgressCallback callback) {
         if (callback == null) {
             callback = new ProgressAdapter();
         }
@@ -81,7 +82,7 @@ public final class NodeManager {
             channel.configureBlocking(false);
             key = NetCore.register(channel);
             Node node = acceptNode(key, callback);
-            node.addTask(new InitTask1(callback));
+            node.addTask(new InitTask1(expectUUID, callback));
         } catch (Exception e) {
             Logger.warn(e);
             callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
