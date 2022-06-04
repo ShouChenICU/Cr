@@ -160,6 +160,21 @@ public class Cr {
         }
 
         /**
+         * 获取在线节点信息列表
+         *
+         * @return 在线节点信息列表
+         */
+        public static int getOnlineNodeCount() {
+            synchronized (LOCK) {
+                if (nodeInfo == null) {
+                    Logger.warn("Cr not initialized");
+                    return 0;
+                }
+                return NodeManager.getOnlineNodeCount();
+            }
+        }
+
+        /**
          * 判断节点是否在线
          *
          * @param uuid 节点标识码
@@ -210,6 +225,7 @@ public class Cr {
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
+                    return false;
                 }
                 try {
                     ChatRoomManager.deleteChatRoom(nodeUUID, roomUUID);
@@ -276,5 +292,6 @@ public class Cr {
         public static NodeStatusUpdateCallback nodeStatusUpdateCallback;
         public static ChatRoomUpdateCallback chatRoomUpdateCallback;
         public static JoinNewRoomCallback joinNewRoomCallback;
+        public static MsgReceiveCallback msgReceiveCallback;
     }
 }

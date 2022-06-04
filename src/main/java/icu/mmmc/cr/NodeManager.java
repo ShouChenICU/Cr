@@ -209,6 +209,17 @@ public final class NodeManager {
     }
 
     /**
+     * 获取在线节点数量
+     *
+     * @return 在线节点数量
+     */
+    static int getOnlineNodeCount() {
+        synchronized (NODE_MAP) {
+            return NODE_MAP.size();
+        }
+    }
+
+    /**
      * 断开所有连接
      */
     static void disconnectALL() {

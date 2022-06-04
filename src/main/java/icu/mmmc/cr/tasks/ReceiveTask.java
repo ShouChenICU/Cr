@@ -4,6 +4,7 @@ import icu.mmmc.cr.ChatPavilion;
 import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.NodeManager;
+import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
@@ -149,6 +150,10 @@ public class ReceiveTask extends TransmitTask {
         ChatPavilion chatPavilion = (ChatPavilion) node.getRoomMap().get(messageInfo.getRoomUUID());
         if (chatPavilion == null) {
             throw new Exception("Chat room not found");
+        }
+        MsgReceiveCallback callback = Cr.CallBack.msgReceiveCallback;
+        if (callback != null) {
+            callback.receiveMsg(messageInfo);
         }
         chatPavilion.receiveMessage(messageInfo);
     }
