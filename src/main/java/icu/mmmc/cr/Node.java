@@ -165,7 +165,6 @@ public abstract class Node extends NetNode {
             try {
                 byte[] dat = encryptor.encrypt(packetBody.serialize());
                 doWrite(dat);
-                heartBeat = System.currentTimeMillis();
             } catch (Exception e) {
                 Logger.warn(e);
                 try {
@@ -201,7 +200,10 @@ public abstract class Node extends NetNode {
         Task task;
         if (packetBody.getDestination() == 0) {
             switch (packetBody.getTaskType()) {
-                case TaskTypes.HEART:
+                case TaskTypes.PING:
+                    postPacket(packetBody.setTaskType(TaskTypes.PONG));
+                    return;
+                case TaskTypes.PONG:
                     return;
                 case TaskTypes.INIT:
                     task = new InitTask0();

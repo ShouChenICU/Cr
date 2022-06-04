@@ -249,7 +249,7 @@ public final class NodeManager {
         } else if (interval > HEART_BEAT_TIME) {
             node.postPacket(new PacketBody()
                     .setDestination(0)
-                    .setTaskType(TaskTypes.HEART));
+                    .setTaskType(TaskTypes.PING));
         }
         TIMER_EXECUTOR.schedule(() -> heartTest(node), HEART_TEST_CYCLE, TimeUnit.MILLISECONDS);
     }

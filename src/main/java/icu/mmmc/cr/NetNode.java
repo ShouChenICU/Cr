@@ -42,11 +42,11 @@ abstract class NetNode {
     @SuppressWarnings("BusyWait")
     public void doWrite(byte[] data) {
         writeLength += data.length;
-        Logger.debug("do write, data length = " + data.length);
+        Logger.debug("Do write, data length = " + data.length);
         try {
             int length = data.length;
             if (length > 65535) {
-                throw new Exception("data length too long");
+                throw new Exception("Data length too long");
             }
             SocketChannel channel = (SocketChannel) key.channel();
             synchronized (key) {
@@ -63,7 +63,7 @@ abstract class NetNode {
                     while (writeBuffer.hasRemaining()) {
                         if (channel.write(writeBuffer) == 0) {
                             if (waitCount >= TIME_OUT_COUNT) {
-                                throw new TimeoutException("write time out!");
+                                throw new TimeoutException("Write time out!");
                             }
                             Thread.sleep(TIME_OUT_LENGTH);
                             waitCount++;
@@ -113,7 +113,7 @@ abstract class NetNode {
                     break;
                 }
                 if (len == -1) {
-                    Logger.debug("channel closed");
+                    Logger.debug("Channel closed");
                     disconnect();
                     return;
                 }
