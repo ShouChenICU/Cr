@@ -112,12 +112,12 @@ public class NodeInfo implements Serialization, Checkable {
         }
     }
 
-    public NodeInfo setUuid(String uuid) {
+    public NodeInfo setUUID(String uuid) {
         this.uuid = uuid;
         return this;
     }
 
-    public String getUuid() {
+    public String getUUID() {
         return uuid;
     }
 

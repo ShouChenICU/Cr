@@ -102,7 +102,7 @@ public class ReceiveTask extends TransmitTask {
      */
     private void receiveRoomInfo() throws Exception {
         RoomInfo roomInfo = new RoomInfo(entityData);
-        if (!Objects.equals(roomInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+        if (!Objects.equals(roomInfo.getNodeUUID(), node.getNodeInfo().getUUID())) {
             throw new Exception("Room info illegal");
         }
         ChatRoomManager.updateRoomInfo(roomInfo);
@@ -115,12 +115,12 @@ public class ReceiveTask extends TransmitTask {
         MemberInfo memberInfo = new MemberInfo(entityData);
         memberInfo.check();
         // 如果这个成员所属的房间归我管理
-        if (Objects.equals(memberInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
+        if (Objects.equals(memberInfo.getNodeUUID(), Cr.getNodeInfo().getUUID())) {
             // 那么对方只能修改自己的属性，比如昵称什么的，否则就是在搞事情
-            if (!Objects.equals(memberInfo.getUserUUID(), node.getNodeInfo().getUuid())) {
+            if (!Objects.equals(memberInfo.getUserUUID(), node.getNodeInfo().getUUID())) {
                 throw new Exception("Member illegal");
             }
-        } else if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+        } else if (!Objects.equals(memberInfo.getNodeUUID(), node.getNodeInfo().getUUID())) {
             // 这个成员所属的房间既不归我也不归他，那么这个成员信息就是无中生有
             throw new Exception("Member fabricated");
         }
@@ -138,12 +138,12 @@ public class ReceiveTask extends TransmitTask {
         MessageInfo messageInfo = new MessageInfo(entityData);
         messageInfo.check();
         // 如果这个消息所属的房间归我管理
-        if (Objects.equals(messageInfo.getNodeUUID(), Cr.getNodeInfo().getUuid())) {
+        if (Objects.equals(messageInfo.getNodeUUID(), Cr.getNodeInfo().getUUID())) {
             // 那么消息的发送者必须是对方
-            if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUuid())) {
+            if (!Objects.equals(messageInfo.getSenderUUID(), node.getNodeInfo().getUUID())) {
                 throw new Exception("Message illegal");
             }
-        } else if (!Objects.equals(messageInfo.getNodeUUID(), node.getNodeInfo().getUuid())) {
+        } else if (!Objects.equals(messageInfo.getNodeUUID(), node.getNodeInfo().getUUID())) {
             // 这个消息所属的房间既不归我也不归他，那么这个消息就是无中生有
             throw new Exception("Message fabricated");
         }

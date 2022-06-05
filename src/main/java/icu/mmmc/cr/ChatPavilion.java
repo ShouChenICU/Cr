@@ -3,6 +3,7 @@ package icu.mmmc.cr;
 import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.Constants;
+import icu.mmmc.cr.constants.MemberRoles;
 import icu.mmmc.cr.constants.MessageTypes;
 import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.database.DaoManager;
@@ -10,6 +11,7 @@ import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
+import icu.mmmc.cr.exceptions.AuthenticationException;
 import icu.mmmc.cr.tasks.PushTask;
 import icu.mmmc.cr.tasks.SyncMemberTask1;
 import icu.mmmc.cr.tasks.SyncMessageTask1;
@@ -70,7 +72,7 @@ public class ChatPavilion implements ChatRoom {
         roomInfo.check();
         this.roomInfo = roomInfo;
         isAvailable = true;
-        isAdmin = Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID());
+        isAdmin = Objects.equals(Cr.getNodeInfo().getUUID(), roomInfo.getNodeUUID());
         availLock = new Object();
         memberMap = new HashMap<>();
         onlineNodeMap = new HashMap<>();
@@ -106,15 +108,11 @@ public class ChatPavilion implements ChatRoom {
      *
      * @param roomInfo 房间信息
      */
-    @Override
     public void updateRoomInfo(RoomInfo roomInfo) throws Exception {
         Objects.requireNonNull(roomInfo);
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
-            }
-            if (!isAdmin) {
-                throw new Exception("Not the homeowner");
             }
             roomInfo.check();
             if (!Objects.equals(roomInfo, this.roomInfo)) {
@@ -122,9 +120,11 @@ public class ChatPavilion implements ChatRoom {
             }
             this.roomInfo = roomInfo;
         }
-        synchronized (onlineNodeMap) {
-            for (Node node : onlineNodeMap.values()) {
-                node.addTask(new PushTask(roomInfo, null));
+        if (isAdmin) {
+            synchronized (onlineNodeMap) {
+                for (Node node : onlineNodeMap.values()) {
+                    node.addTask(new PushTask(roomInfo, null));
+                }
             }
         }
     }
@@ -146,8 +146,8 @@ public class ChatPavilion implements ChatRoom {
             }
             synchronized (memberMap) {
                 memberMap.put(memberInfo.getUserUUID(), memberInfo);
+                DaoManager.getMemberDao().updateMember(memberInfo);
             }
-            DaoManager.getMemberDao().updateMember(memberInfo);
         }
         if (isAdmin) {
             synchronized (onlineNodeMap) {
@@ -191,74 +191,92 @@ public class ChatPavilion implements ChatRoom {
      * 添加成员
      * 主动操作，只有房主或管理员才可用
      *
-     * @param memberInfo 成员信息
+     * @param UUID 成员标识码
      */
     @Override
-    public void addMember(MemberInfo memberInfo) throws Exception {
-        Objects.requireNonNull(memberInfo);
+    public void addMember(String UUID) throws Exception {
+        Objects.requireNonNull(UUID);
+        MemberInfo memberInfo = new MemberInfo()
+                .setNodeUUID(roomInfo.getNodeUUID())
+                .setRoomUUID(roomInfo.getRoomUUID())
+                .setUserUUID(UUID);
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
             }
-            // 检查是否是房主
-            if (!Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
-                throw new Exception("Not the homeowner");
-            }
-            if (memberInfo.getUserUUID() == null) {
-                throw new Exception("User uuid is null");
-            } else if (memberInfo.getNickname() == null) {
-                NodeInfo nodeInfo = DaoManager.getNodeInfoDao().getByUUID(memberInfo.getUserUUID());
-                if (nodeInfo == null || nodeInfo.getAttr(NodeAttributes.$TITLE) == null) {
-                    memberInfo.setNickname(memberInfo.getUserUUID());
-                } else {
-                    memberInfo.setNickname(nodeInfo.getAttr(NodeAttributes.$TITLE));
+            // 检查是否有权限
+            String myUUID = Cr.getNodeInfo().getUUID();
+            if (!Objects.equals(myUUID, roomInfo.getNodeUUID())) {
+                // 不是房主
+                synchronized ((memberMap)) {
+                    MemberInfo myInfo = memberMap.get(myUUID);
+                    if (myInfo == null || myInfo.getRole() != MemberRoles.ROLE_ADMIN) {
+                        // 也不是管理员
+                        throw new AuthenticationException("Permission deny");
+                    }
                 }
             }
-            if (memberInfo.getNickname().length() > Constants.MAX_NICKNAME_LENGTH) {
-                throw new Exception("Nickname length out of range " + Constants.MAX_NICKNAME_LENGTH);
-            }
-            memberInfo.setNodeUUID(roomInfo.getNodeUUID())
-                    .setRoomUUID(roomInfo.getRoomUUID())
-                    .setUpdateTime(System.currentTimeMillis());
             synchronized (memberMap) {
-                if (memberMap.containsKey(memberInfo.getUserUUID())) {
+                if (memberMap.containsKey(UUID)) {
                     throw new Exception("Member already exists");
                 }
-                memberMap.put(memberInfo.getUserUUID(), memberInfo);
-                DaoManager.getMemberDao().updateMember(memberInfo);
             }
+            NodeInfo nodeInfo = DaoManager.getNodeInfoDao().getByUUID(UUID);
+            if (nodeInfo == null || nodeInfo.getAttr(NodeAttributes.$TITLE) == null) {
+                memberInfo.setNickname(UUID.substring(0, 8));
+            } else {
+                memberInfo.setNickname(nodeInfo.getAttr(NodeAttributes.$TITLE));
+            }
+            long joinTime = System.currentTimeMillis();
+            memberInfo.setUpdateTime(joinTime)
+                    .setJoinTime(joinTime);
         }
         // 推送新成员
-        synchronized (onlineNodeMap) {
-            for (Node node : onlineNodeMap.values()) {
-                node.addTask(new PushTask(memberInfo, null));
+        if (isAdmin) {
+            synchronized (memberMap) {
+                memberMap.put(UUID, memberInfo);
+                DaoManager.getMemberDao().updateMember(memberInfo);
             }
+            synchronized (onlineNodeMap) {
+                for (Node node : onlineNodeMap.values()) {
+                    node.addTask(new PushTask(memberInfo, null));
+                }
+            }
+        } else {
+            Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+            if (node == null || !node.isOnline()) {
+                throw new Exception("Room is offline");
+            }
+            // TODO: 2022/6/5 要用新Task了
+            node.addTask(new PushTask(memberInfo, null));
         }
     }
 
     /**
      * 移除成员
      *
-     * @param memberInfo 成员信息
+     * @param UUID 成员标识码
      */
     @Override
-    public void removeMember(MemberInfo memberInfo) throws Exception {
-        Objects.requireNonNull(memberInfo);
+    public void removeMember(String UUID) throws Exception {
+        Objects.requireNonNull(UUID);
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
             }
-            memberInfo.check();
-            if (!Objects.equals(memberInfo.getNodeUUID(), roomInfo.getNodeUUID())
-                    || !Objects.equals(memberInfo.getRoomUUID(), roomInfo.getRoomUUID())) {
-                throw new Exception("Member info illegal");
-            }
-            // 检查是否是房主
-            if (!Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
-                throw new Exception("Not the homeowner");
-            }
             synchronized (memberMap) {
-                if (memberMap.containsKey(memberInfo.getUserUUID())) {
+                // 检查是否有权限
+                String myUUID = Cr.getNodeInfo().getUUID();
+                if (!Objects.equals(myUUID, roomInfo.getNodeUUID())) {
+                    // 不是房主
+                    MemberInfo myInfo = memberMap.get(myUUID);
+                    if (myInfo == null || myInfo.getRole() != MemberRoles.ROLE_ADMIN) {
+                        // 也不是管理员
+                        throw new AuthenticationException("Permission deny");
+                    }
+                }
+                MemberInfo memberInfo = memberMap.get(UUID);
+                if (memberInfo == null) {
                     throw new Exception("Member already removed");
                 }
                 memberMap.remove(memberInfo.getUserUUID());
@@ -456,7 +474,7 @@ public class ChatPavilion implements ChatRoom {
         if (!isAvailable) {
             return false;
         }
-        if (Objects.equals(Cr.getNodeInfo().getUuid(), roomInfo.getNodeUUID())) {
+        if (Objects.equals(Cr.getNodeInfo().getUUID(), roomInfo.getNodeUUID())) {
             return true;
         }
         Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
@@ -570,7 +588,7 @@ public class ChatPavilion implements ChatRoom {
                         .setNodeUUID(roomInfo.getNodeUUID())
                         .setRoomUUID(roomInfo.getRoomUUID())
                         .setContent(content)
-                        .setSenderUUID(Cr.getNodeInfo().getUuid())
+                        .setSenderUUID(Cr.getNodeInfo().getUUID())
                         .setType(MessageTypes.TYPE_TEXT);
                 if (isAdmin) {
                     receiveMessage(msg);

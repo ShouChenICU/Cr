@@ -208,7 +208,7 @@ public class Cr {
                     return null;
                 }
                 try {
-                    return ChatRoomManager.createChatRoom(nodeInfo.getUuid(), title);
+                    return ChatRoomManager.createChatRoom(nodeInfo.getUUID(), title);
                 } catch (Exception e) {
                     Logger.warn(e);
                     return null;

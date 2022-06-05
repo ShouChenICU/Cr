@@ -23,25 +23,18 @@ public interface ChatRoom {
     RoomInfo getRoomInfo();
 
     /**
-     * 更新房间信息
-     *
-     * @param roomInfo 房间信息
-     */
-    void updateRoomInfo(RoomInfo roomInfo) throws Exception;
-
-    /**
      * 添加成员
      *
-     * @param memberInfo 成员信息
+     * @param UUID 成员标识码
      */
-    void addMember(MemberInfo memberInfo) throws Exception;
+    void addMember(String UUID) throws Exception;
 
     /**
      * 移除成员
      *
-     * @param memberInfo 成员信息
+     * @param UUID 成员标识码
      */
-    void removeMember(MemberInfo memberInfo) throws Exception;
+    void removeMember(String UUID) throws Exception;
 
     /**
      * 更新成员

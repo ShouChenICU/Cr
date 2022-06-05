@@ -1,6 +1,8 @@
 package icu.mmmc.cr;
 
 import icu.mmmc.cr.constants.Constants;
+import icu.mmmc.cr.constants.MemberRoles;
+import icu.mmmc.cr.constants.NodeAttributes;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.MemberDao;
 import icu.mmmc.cr.entities.MemberInfo;
@@ -22,11 +24,11 @@ public final class ChatRoomManager {
     /**
      * 全部聊天室列表
      */
-    private static final List<ChatRoom> CHAT_ROOM_LIST;
+    private static final List<ChatPavilion> CHAT_ROOM_LIST;
     /**
      * 被管理的聊天室map(房主是自己)
      */
-    private static final Map<String, ChatRoom> MANAGE_ROOM_MAP;
+    private static final Map<String, ChatPavilion> MANAGE_ROOM_MAP;
 
     static {
         CHAT_ROOM_LIST = new ArrayList<>();
@@ -39,15 +41,14 @@ public final class ChatRoomManager {
      * @param node 节点
      */
     static void registerNode(Node node) {
-        if (node == null || node.getNodeInfo() == null || node.getNodeInfo().getUuid() == null) {
+        if (node == null || node.getNodeInfo() == null || node.getNodeInfo().getUUID() == null) {
             Logger.warn("Node info broken");
             return;
         }
-        String uuid = node.getNodeInfo().getUuid();
+        String uuid = node.getNodeInfo().getUUID();
         Logger.debug("Register node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
-            for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
-                ChatPavilion chatPavilion = (ChatPavilion) chatRoom;
+            for (ChatPavilion chatPavilion : MANAGE_ROOM_MAP.values()) {
                 if (chatPavilion.containMember(uuid)) {
                     chatPavilion.putNode(uuid, node);
                 }
@@ -55,9 +56,9 @@ public final class ChatRoomManager {
         }
         ConcurrentHashMap<String, ChatRoom> roomMap = node.getRoomMap();
         synchronized (CHAT_ROOM_LIST) {
-            for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
-                if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), uuid)) {
-                    roomMap.put(chatRoom.getRoomInfo().getRoomUUID(), chatRoom);
+            for (ChatPavilion chatPavilion : CHAT_ROOM_LIST) {
+                if (Objects.equals(chatPavilion.getRoomInfo().getNodeUUID(), uuid)) {
+                    roomMap.put(chatPavilion.getRoomInfo().getRoomUUID(), chatPavilion);
                 }
             }
         }
@@ -75,8 +76,8 @@ public final class ChatRoomManager {
         }
         Logger.debug("Unregister node " + uuid);
         synchronized (MANAGE_ROOM_MAP) {
-            for (ChatRoom chatRoom : MANAGE_ROOM_MAP.values()) {
-                ((ChatPavilion) chatRoom).removeNode(uuid);
+            for (ChatPavilion chatPavilion : MANAGE_ROOM_MAP.values()) {
+                chatPavilion.removeNode(uuid);
             }
         }
     }
@@ -90,13 +91,13 @@ public final class ChatRoomManager {
         try {
             roomInfo.check();
             synchronized (CHAT_ROOM_LIST) {
-                for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
-                    if (Objects.equals(roomInfo, chatRoom.getRoomInfo())) {
-                        chatRoom.updateRoomInfo(roomInfo);
+                for (ChatPavilion chatPavilion : CHAT_ROOM_LIST) {
+                    if (Objects.equals(roomInfo, chatPavilion.getRoomInfo())) {
+                        chatPavilion.updateRoomInfo(roomInfo);
                         Logger.debug("Update room info. node:" + roomInfo.getNodeUUID() + " room:" + roomInfo.getRoomUUID());
                         DaoManager.getRoomDao().updateRoomInfo(roomInfo);
-                        chatRoom.syncMembers(null);
-                        chatRoom.syncMessagesBeforeTime(System.currentTimeMillis(), null);
+                        chatPavilion.syncMembers(null);
+                        chatPavilion.syncMessagesBeforeTime(System.currentTimeMillis(), null);
                         Objects.requireNonNullElse(Cr.CallBack.chatRoomUpdateCallback, () -> {
                         }).update();
                         return;
@@ -134,25 +135,29 @@ public final class ChatRoomManager {
         if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
             throw new Exception("Title length out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
         }
-        String uuid = UUID.randomUUID().toString();
+        String roomUUID = UUID.randomUUID().toString();
         ChatPavilion chatPavilion;
         synchronized (MANAGE_ROOM_MAP) {
-            while (MANAGE_ROOM_MAP.get(uuid) != null) {
-                uuid = UUID.randomUUID().toString();
+            while (MANAGE_ROOM_MAP.get(roomUUID) != null) {
+                roomUUID = UUID.randomUUID().toString();
             }
             RoomInfo roomInfo = new RoomInfo()
                     .setNodeUUID(nodeUUID)
-                    .setRoomUUID(uuid)
+                    .setRoomUUID(roomUUID)
                     .setTitle(title)
                     .setUpdateTime(System.currentTimeMillis());
             DaoManager.getRoomDao().updateRoomInfo(roomInfo);
             chatPavilion = new ChatPavilion(roomInfo);
+            long joinTime = System.currentTimeMillis();
             chatPavilion.updateMemberInfo(new MemberInfo()
                     .setNodeUUID(nodeUUID)
-                    .setRoomUUID(uuid)
+                    .setRoomUUID(roomUUID)
                     .setUserUUID(nodeUUID)
-                    .setUpdateTime(System.currentTimeMillis()));
-            MANAGE_ROOM_MAP.put(uuid, chatPavilion);
+                    .setNickname(Cr.getNodeInfo().getAttr(NodeAttributes.$TITLE))
+                    .setRole(MemberRoles.ROLE_OWNER)
+                    .setUpdateTime(joinTime)
+                    .setJoinTime(joinTime));
+            MANAGE_ROOM_MAP.put(roomUUID, chatPavilion);
             synchronized (CHAT_ROOM_LIST) {
                 CHAT_ROOM_LIST.add(chatPavilion);
             }
@@ -177,12 +182,12 @@ public final class ChatRoomManager {
         }
         synchronized (MANAGE_ROOM_MAP) {
             synchronized (CHAT_ROOM_LIST) {
-                Iterator<ChatRoom> iterator = CHAT_ROOM_LIST.iterator();
+                Iterator<ChatPavilion> iterator = CHAT_ROOM_LIST.iterator();
                 while (iterator.hasNext()) {
-                    ChatRoom chatRoom = iterator.next();
-                    if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), nodeUUID)
-                            && Objects.equals(chatRoom.getRoomInfo().getRoomUUID(), roomUUID)) {
-                        ((ChatPavilion) chatRoom).disable();
+                    ChatPavilion chatPavilion = iterator.next();
+                    if (Objects.equals(chatPavilion.getRoomInfo().getNodeUUID(), nodeUUID)
+                            && Objects.equals(chatPavilion.getRoomInfo().getRoomUUID(), roomUUID)) {
+                        chatPavilion.disable();
                         iterator.remove();
                         break;
                     }
@@ -206,7 +211,7 @@ public final class ChatRoomManager {
             Logger.warn("Node info is null");
             return;
         }
-        String uuid = nodeInfo.getUuid();
+        String uuid = nodeInfo.getUUID();
         List<RoomInfo> roomInfoList = DaoManager.getRoomDao().getAllRoomInfos();
         synchronized (MANAGE_ROOM_MAP) {
             synchronized (CHAT_ROOM_LIST) {
@@ -244,9 +249,9 @@ public final class ChatRoomManager {
      */
     static synchronized void unloadAllRooms() {
         synchronized (CHAT_ROOM_LIST) {
-            Iterator<ChatRoom> iterator = CHAT_ROOM_LIST.iterator();
+            Iterator<ChatPavilion> iterator = CHAT_ROOM_LIST.iterator();
             while (iterator.hasNext()) {
-                ((ChatPavilion) iterator.next()).disable();
+                iterator.next().disable();
                 iterator.remove();
             }
         }
@@ -304,9 +309,9 @@ public final class ChatRoomManager {
     static List<ChatRoom> getRoomListByNodeUUID(String nodeUUID) {
         List<ChatRoom> rooms = new ArrayList<>();
         synchronized (CHAT_ROOM_LIST) {
-            for (ChatRoom chatRoom : CHAT_ROOM_LIST) {
-                if (Objects.equals(chatRoom.getRoomInfo().getNodeUUID(), nodeUUID)) {
-                    rooms.add(chatRoom);
+            for (ChatPavilion chatPavilion : CHAT_ROOM_LIST) {
+                if (Objects.equals(chatPavilion.getRoomInfo().getNodeUUID(), nodeUUID)) {
+                    rooms.add(chatPavilion);
                 }
             }
         }

@@ -61,7 +61,7 @@ public class SyncRoomTask0 extends AbstractTask {
     @Override
     public void init(Node node, int taskId) {
         super.init(node, taskId);
-        roomInfoList = DaoManager.getRoomDao().getByOwnUUIDAndContainMember(Cr.getNodeInfo().getUuid(), node.getNodeInfo().getUuid());
+        roomInfoList = DaoManager.getRoomDao().getByOwnUUIDAndContainMember(Cr.getNodeInfo().getUUID(), node.getNodeInfo().getUUID());
         latch = new CountDownLatch(roomInfoList.size());
     }
 }

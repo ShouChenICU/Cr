@@ -122,7 +122,7 @@ public abstract class Node extends NetNode {
      * @return 已连接且身份有效则返回true
      */
     protected boolean isOnline() {
-        return isConnect() && nodeInfo != null && nodeInfo.getUuid() != null;
+        return isConnect() && nodeInfo != null && nodeInfo.getUUID() != null;
     }
 
     /**

@@ -28,9 +28,17 @@ public class MemberInfo implements Serialization, Checkable {
      */
     private String userUUID;
     /**
+     * 角色
+     */
+    private int role;
+    /**
      * 昵称
      */
     private String nickname;
+    /**
+     * 加入时间
+     */
+    private long joinTime;
     /**
      * 更新时间
      */
@@ -45,7 +53,9 @@ public class MemberInfo implements Serialization, Checkable {
         nodeUUID = (String) object.get("NODE_UUID");
         roomUUID = (String) object.get("ROOM_UUID");
         userUUID = (String) object.get("USER_UUID");
+        role = (int) object.get("ROLE");
         nickname = (String) object.get("NICKNAME");
+        joinTime = (long) object.get("JOIN_TIME");
         updateTime = (long) object.get("UPDATE_TIME");
         check();
     }
@@ -89,12 +99,30 @@ public class MemberInfo implements Serialization, Checkable {
         return this;
     }
 
+    public int getRole() {
+        return role;
+    }
+
+    public MemberInfo setRole(int role) {
+        this.role = role;
+        return this;
+    }
+
     public String getNickname() {
         return nickname;
     }
 
     public MemberInfo setNickname(String nickname) {
         this.nickname = nickname;
+        return this;
+    }
+
+    public long getJoinTime() {
+        return joinTime;
+    }
+
+    public MemberInfo setJoinTime(long joinTime) {
+        this.joinTime = joinTime;
         return this;
     }
 
@@ -130,7 +158,9 @@ public class MemberInfo implements Serialization, Checkable {
                 "nodeUUID='" + nodeUUID + '\'' +
                 ", roomUUID='" + roomUUID + '\'' +
                 ", userUUID='" + userUUID + '\'' +
+                ", role=" + role +
                 ", nickname='" + nickname + '\'' +
+                ", joinTime=" + joinTime +
                 ", updateTime=" + updateTime +
                 '}';
     }
@@ -146,7 +176,9 @@ public class MemberInfo implements Serialization, Checkable {
                 .set("NODE_UUID", nodeUUID)
                 .set("ROOM_UUID", roomUUID)
                 .set("USER_UUID", userUUID)
+                .set("ROLE", role)
                 .set("NICKNAME", nickname)
+                .set("JOIN_TIME", joinTime)
                 .set("UPDATE_TIME", updateTime)
                 .serialize();
     }

@@ -70,7 +70,7 @@ public class InitTask1 extends AbstractTask {
                     if (newConnectionCallback.newConnection(uuid, uuid, true)) {
                         // 生成一个临时节点信息
                         nodeInfo = new NodeInfo()
-                                .setUuid(uuid)
+                                .setUUID(uuid)
                                 .setPublicKey(publicKey);
                     } else {
                         halt("连接被拒绝");

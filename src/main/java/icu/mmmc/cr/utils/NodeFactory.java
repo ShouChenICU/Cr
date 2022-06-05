@@ -20,7 +20,7 @@ public final class NodeFactory {
      */
     public static NodeInfo genNodeInfo(String title, KeyPair keyPair) throws Exception {
         return new NodeInfo()
-                .setUuid(UUID.nameUUIDFromBytes(keyPair.getPublic().getEncoded()).toString())
+                .setUUID(UUID.nameUUIDFromBytes(keyPair.getPublic().getEncoded()).toString())
                 .setPublicKey(keyPair.getPublic())
                 .setAttr(NodeAttributes.$TITLE, title)
                 .sign(keyPair.getPrivate());

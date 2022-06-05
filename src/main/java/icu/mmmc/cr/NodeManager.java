@@ -113,9 +113,9 @@ public final class NodeManager {
                     CONNECTING_NODE_LIST.remove(this);
                 }
                 try {
-                    String uuid = nodeInfo.getUuid();
+                    String uuid = nodeInfo.getUUID();
                     synchronized (NODE_MAP) {
-                        if (NODE_MAP.get(uuid) != null || Objects.equals(Cr.getNodeInfo().getUuid(), uuid)) {
+                        if (NODE_MAP.get(uuid) != null || Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
                             String s = "Connect repeatedly " + uuid;
                             finalCallback.halt(s);
                             Logger.debug(s);
@@ -151,7 +151,7 @@ public final class NodeManager {
 
             @Override
             public void disconnect() {
-                String uuid = nodeInfo == null ? null : nodeInfo.getUuid();
+                String uuid = nodeInfo == null ? null : nodeInfo.getUUID();
                 try {
                     super.disconnect();
                 } catch (Exception e) {
@@ -160,7 +160,7 @@ public final class NodeManager {
                 if (uuid != null) {
                     synchronized (NODE_MAP) {
                         if (NODE_MAP.remove(uuid) != null) {
-                            Logger.debug("Remove " + nodeInfo.getUuid());
+                            Logger.debug("Remove " + nodeInfo.getUUID());
                             NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
                             if (callback1 != null) {
                                 callback1.disconnected(nodeInfo);
@@ -283,7 +283,7 @@ public final class NodeManager {
             Logger.warn(e);
             return;
         }
-        String uuid = nodeInfo.getUuid();
+        String uuid = nodeInfo.getUUID();
         NodeInfoDao dao = DaoManager.getNodeInfoDao();
         if (dao != null) {
             // 获取数据库保存的该节点信息
