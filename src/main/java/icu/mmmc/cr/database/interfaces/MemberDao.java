@@ -14,9 +14,11 @@ public interface MemberDao {
     /**
      * 从数据库删除一个成员信息
      *
-     * @param memberInfo 成员信息
+     * @param nodeUUID 节点标识码
+     * @param roomUUID 房间标识码
+     * @param userUUID 用户标识码
      */
-    void deleteMember(MemberInfo memberInfo);
+    void deleteMember(String nodeUUID, String roomUUID, String userUUID);
 
     /**
      * 更新或添加成员信息

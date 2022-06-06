@@ -6,9 +6,7 @@ import icu.mmmc.cr.tasks.*;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -32,7 +30,6 @@ public abstract class Node extends NetNode {
     private final Queue<PacketBody> waitSendPacketQueue;
     private final Encryptor encryptor;
     private final ConcurrentHashMap<Integer, Task> taskMap;
-    private final ConcurrentHashMap<String, ChatRoom> roomMap;
     protected NodeInfo nodeInfo;
     protected long heartBeat;
     private int taskIdCount;
@@ -45,7 +42,6 @@ public abstract class Node extends NetNode {
         waitSendPacketQueue = new LinkedList<>();
         encryptor = new Encryptor();
         taskMap = new ConcurrentHashMap<>();
-        roomMap = new ConcurrentHashMap<>();
         heartBeat = System.currentTimeMillis();
         taskIdCount = 1;
         sendPacketCount = 0;
@@ -211,6 +207,9 @@ public abstract class Node extends NetNode {
                 case TaskTypes.PUSH:
                     task = new ReceiveTask();
                     break;
+                case TaskTypes.REQUEST:
+                    task = new ResponseTask();
+                    break;
                 case TaskTypes.SYNC_ROOM:
                     task = new SyncRoomTask0();
                     break;
@@ -256,19 +255,6 @@ public abstract class Node extends NetNode {
         } catch (Exception ex) {
             Logger.warn(ex);
         }
-    }
-
-    /**
-     * 获取该节点管理的房间列表
-     *
-     * @return 房间列表
-     */
-    public List<ChatRoom> getRoomList() {
-        return new ArrayList<>(roomMap.values());
-    }
-
-    public ConcurrentHashMap<String, ChatRoom> getRoomMap() {
-        return roomMap;
     }
 
     public long getHeartBeat() {

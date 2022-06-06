@@ -2,10 +2,7 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
-import icu.mmmc.cr.constants.Constants;
-import icu.mmmc.cr.constants.MemberRoles;
-import icu.mmmc.cr.constants.MessageTypes;
-import icu.mmmc.cr.constants.NodeAttributes;
+import icu.mmmc.cr.constants.*;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
@@ -13,6 +10,7 @@ import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.exceptions.AuthenticationException;
 import icu.mmmc.cr.tasks.PushTask;
+import icu.mmmc.cr.tasks.RequestTask;
 import icu.mmmc.cr.tasks.SyncMemberTask1;
 import icu.mmmc.cr.tasks.SyncMessageTask1;
 import icu.mmmc.cr.utils.Logger;
@@ -41,7 +39,7 @@ public class ChatPavilion implements ChatRoom {
     /**
      * 如果该房间被自己所管理，则为true,否则为false
      */
-    private final boolean isAdmin;
+    private final boolean isOwner;
     /**
      * 成员map
      */
@@ -72,7 +70,7 @@ public class ChatPavilion implements ChatRoom {
         roomInfo.check();
         this.roomInfo = roomInfo;
         isAvailable = true;
-        isAdmin = Objects.equals(Cr.getNodeInfo().getUUID(), roomInfo.getNodeUUID());
+        isOwner = Objects.equals(Cr.getNodeInfo().getUUID(), roomInfo.getNodeUUID());
         availLock = new Object();
         memberMap = new HashMap<>();
         onlineNodeMap = new HashMap<>();
@@ -120,7 +118,7 @@ public class ChatPavilion implements ChatRoom {
             }
             this.roomInfo = roomInfo;
         }
-        if (isAdmin) {
+        if (isOwner) {
             synchronized (onlineNodeMap) {
                 for (Node node : onlineNodeMap.values()) {
                     node.addTask(new PushTask(roomInfo, null));
@@ -149,40 +147,11 @@ public class ChatPavilion implements ChatRoom {
                 DaoManager.getMemberDao().updateMember(memberInfo);
             }
         }
-        if (isAdmin) {
+        if (isOwner) {
             synchronized (onlineNodeMap) {
                 for (Node node : onlineNodeMap.values()) {
                     node.addTask(new PushTask(memberInfo, null));
                 }
-            }
-        }
-    }
-
-    /**
-     * 更新成员
-     *
-     * @param memberInfo 成员信息
-     */
-    @Override
-    public void updateMember(MemberInfo memberInfo) throws Exception {
-        Objects.requireNonNull(memberInfo);
-        synchronized (availLock) {
-            if (!isAvailable) {
-                throw new Exception("Room is not available");
-            }
-            memberInfo.check();
-            if (!Objects.equals(memberInfo.getNodeUUID(), roomInfo.getNodeUUID())
-                    || !Objects.equals(memberInfo.getRoomUUID(), roomInfo.getRoomUUID())) {
-                throw new Exception("Member info illegal");
-            }
-            if (isAdmin) {
-                updateMemberInfo(memberInfo);
-            } else {
-                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
-                if (node == null || !node.isOnline()) {
-                    throw new Exception("Room is offline");
-                }
-                node.addTask(new PushTask(memberInfo, null));
             }
         }
     }
@@ -230,25 +199,24 @@ public class ChatPavilion implements ChatRoom {
             long joinTime = System.currentTimeMillis();
             memberInfo.setUpdateTime(joinTime)
                     .setJoinTime(joinTime);
-        }
-        // 推送新成员
-        if (isAdmin) {
-            synchronized (memberMap) {
-                memberMap.put(UUID, memberInfo);
-                DaoManager.getMemberDao().updateMember(memberInfo);
-            }
-            synchronized (onlineNodeMap) {
-                for (Node node : onlineNodeMap.values()) {
-                    node.addTask(new PushTask(memberInfo, null));
+            // 推送新成员
+            if (isOwner) {
+                synchronized (memberMap) {
+                    memberMap.put(UUID, memberInfo);
+                    DaoManager.getMemberDao().updateMember(memberInfo);
                 }
+                synchronized (onlineNodeMap) {
+                    for (Node node : onlineNodeMap.values()) {
+                        node.addTask(new PushTask(memberInfo, null));
+                    }
+                }
+            } else {
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    throw new Exception("Room is offline");
+                }
+                node.addTask(new RequestTask(null, RequestTypes.ADD_MEMBER, memberInfo));
             }
-        } else {
-            Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
-            if (node == null || !node.isOnline()) {
-                throw new Exception("Room is offline");
-            }
-            // TODO: 2022/6/5 要用新Task了
-            node.addTask(new PushTask(memberInfo, null));
         }
     }
 
@@ -260,6 +228,7 @@ public class ChatPavilion implements ChatRoom {
     @Override
     public void removeMember(String UUID) throws Exception {
         Objects.requireNonNull(UUID);
+        MemberInfo memberInfo;
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
@@ -275,18 +244,40 @@ public class ChatPavilion implements ChatRoom {
                         throw new AuthenticationException("Permission deny");
                     }
                 }
-                MemberInfo memberInfo = memberMap.get(UUID);
+                memberInfo = memberMap.get(UUID);
                 if (memberInfo == null) {
                     throw new Exception("Member already removed");
                 }
-                memberMap.remove(memberInfo.getUserUUID());
-                DaoManager.getMemberDao().deleteMember(memberInfo);
             }
-        }
-        // 推送更新
-        synchronized (onlineNodeMap) {
-            for (Node node : onlineNodeMap.values()) {
-                // TODO: 2022/5/28  
+            if (isOwner) {
+                // 如果是群主
+                synchronized (memberMap) {
+                    memberMap.remove(UUID);
+                    DaoManager.getMemberDao()
+                            .deleteMember(memberInfo.getNodeUUID(),
+                                    memberInfo.getRoomUUID(),
+                                    UUID);
+                }
+                // 推送更新
+                synchronized (onlineNodeMap) {
+                    for (Node node : onlineNodeMap.values()) {
+                        node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
+                                memberInfo.getNodeUUID(),
+                                memberInfo.getRoomUUID(),
+                                UUID));
+                    }
+                }
+            } else {
+                // 不是群主，但是是管理员
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    throw new Exception("Node is offline");
+                } else {
+                    node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
+                            memberInfo.getNodeUUID(),
+                            memberInfo.getRoomUUID(),
+                            UUID));
+                }
             }
         }
     }
@@ -298,6 +289,7 @@ public class ChatPavilion implements ChatRoom {
      */
     public void deleteMember(String userUUID) throws Exception {
         Objects.requireNonNull(userUUID);
+        MemberInfo memberInfo;
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
@@ -306,11 +298,19 @@ public class ChatPavilion implements ChatRoom {
                 if (memberMap.containsKey(userUUID)) {
                     throw new Exception("Member already removed");
                 }
-                memberMap.remove(userUUID);
-                DaoManager.getMemberDao().deleteMember(new MemberInfo()
-                        .setNodeUUID(roomInfo.getNodeUUID())
-                        .setRoomUUID(roomInfo.getRoomUUID())
-                        .setUserUUID(userUUID));
+                memberInfo = memberMap.remove(userUUID);
+                DaoManager.getMemberDao()
+                        .deleteMember(roomInfo.getNodeUUID(),
+                                roomInfo.getRoomUUID(),
+                                userUUID);
+            }
+        }
+        if (isOwner) {
+            for (Node node : onlineNodeMap.values()) {
+                node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
+                        memberInfo.getNodeUUID(),
+                        memberInfo.getRoomUUID(),
+                        userUUID));
             }
         }
     }
@@ -383,7 +383,7 @@ public class ChatPavilion implements ChatRoom {
                     || !memberMap.containsKey(messageInfo.getSenderUUID())) {
                 throw new Exception("Message is illegal");
             }
-            if (isAdmin) {
+            if (isOwner) {
                 messageInfo.setId(++maxMsgID);
                 messageInfo.setTimestamp(System.currentTimeMillis());
                 broadcastMsg(messageInfo);
@@ -590,7 +590,7 @@ public class ChatPavilion implements ChatRoom {
                         .setContent(content)
                         .setSenderUUID(Cr.getNodeInfo().getUUID())
                         .setType(MessageTypes.TYPE_TEXT);
-                if (isAdmin) {
+                if (isOwner) {
                     receiveMessage(msg);
                 } else {
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
@@ -617,7 +617,7 @@ public class ChatPavilion implements ChatRoom {
             synchronized (availLock) {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
-                } else if (isAdmin) {
+                } else if (isOwner) {
                     callback.done();
                     return;
                 }
@@ -668,7 +668,7 @@ public class ChatPavilion implements ChatRoom {
             synchronized (availLock) {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
-                } else if (isAdmin) {
+                } else if (isOwner) {
                     callback.done();
                     return;
                 }
@@ -717,5 +717,10 @@ public class ChatPavilion implements ChatRoom {
     @Override
     public void setMsgReceiveCallback(MsgReceiveCallback msgReceiveCallback) {
         this.msgReceiveCallback = msgReceiveCallback;
+    }
+
+    @Override
+    public boolean isOwner() {
+        return isOwner;
     }
 }

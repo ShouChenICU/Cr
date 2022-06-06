@@ -37,13 +37,6 @@ public interface ChatRoom {
     void removeMember(String UUID) throws Exception;
 
     /**
-     * 更新成员
-     *
-     * @param memberInfo 成员信息
-     */
-    void updateMember(MemberInfo memberInfo) throws Exception;
-
-    /**
      * 是否存在成员
      *
      * @param uuid 成员标识码
@@ -125,6 +118,13 @@ public interface ChatRoom {
      * 否则返回false
      */
     boolean isOnline();
+
+    /**
+     * 是否是管理员
+     *
+     * @return 如果房间是自己管理，则为=返回true,否则返回false
+     */
+    boolean isOwner();
 
     /**
      * 设置消息接收回调

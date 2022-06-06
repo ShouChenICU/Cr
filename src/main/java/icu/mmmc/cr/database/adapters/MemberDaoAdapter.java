@@ -16,10 +16,11 @@ public class MemberDaoAdapter implements MemberDao {
     /**
      * 从数据库删除一个成员信息
      *
-     * @param memberInfo 成员信息
+     * @param nodeUUID 节点标识码
+     * @param roomUUID 房间标识码
+     * @param userUUID 用户标识码
      */
-    @Override
-    public void deleteMember(MemberInfo memberInfo) {
+    public void deleteMember(String nodeUUID, String roomUUID, String userUUID) {
     }
 
     /**

@@ -32,15 +32,19 @@ public class TaskTypes {
      */
     public static final int PUSH = 4;
     /**
+     * 发起请求
+     */
+    public static final int REQUEST = 5;
+    /**
      * 房间同步
      */
-    public static final int SYNC_ROOM = 5;
+    public static final int SYNC_ROOM = 6;
     /**
      * 成员同步
      */
-    public static final int SYNC_MEMBER = 6;
+    public static final int SYNC_MEMBER = 7;
     /**
      * 消息同步
      */
-    public static final int SYNC_MESSAGE = 7;
+    public static final int SYNC_MESSAGE = 8;
 }
