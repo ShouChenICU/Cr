@@ -115,10 +115,11 @@ public final class NodeManager {
                 try {
                     String uuid = nodeInfo.getUUID();
                     synchronized (NODE_MAP) {
-                        if (NODE_MAP.get(uuid) != null || Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
+                        if (NODE_MAP.containsKey(uuid) || Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
                             String s = "Connect repeatedly " + uuid;
                             finalCallback.halt(s);
-                            Logger.debug(s);
+                            Logger.warn(s);
+                            nodeInfo = null;
                             disconnect();
                         } else {
                             NODE_MAP.put(uuid, this);
@@ -168,8 +169,8 @@ public final class NodeManager {
                         }
                     }
                     ChatRoomManager.unregisterNode(uuid);
+                    Logger.info("Disconnect to " + uuid);
                 }
-                Logger.info("Disconnect to " + uuid);
             }
         };
         synchronized (CONNECTING_NODE_LIST) {
