@@ -66,6 +66,22 @@ public class ResponseTask extends AbstractTask {
                         throw new AuthenticationException("Permission deny");
                     }
                     break;
+                case RequestTypes.UPDATE_NICKNAME:
+                    String nickname = (String) object.get("0");
+                    nodeUUID = (String) object.get("1");
+                    roomUUID = (String) object.get("2");
+                    userUUID = node.getNodeInfo().getUUID();
+                    pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+                    if (pavilion == null) {
+                        throw new Exception("Room not found");
+                    }
+                    memberInfo = pavilion.getMemberInfo(userUUID);
+                    if (memberInfo == null) {
+                        throw new Exception("Member not found");
+                    }
+                    memberInfo.setNickname(nickname);
+                    pavilion.updateMemberInfo(memberInfo);
+                    break;
             }
         } catch (Exception e) {
             Logger.warn(e);

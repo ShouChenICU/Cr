@@ -35,6 +35,15 @@ public class RequestTask extends AbstractTask {
                     throw new Exception("Argument error");
                 }
                 break;
+            case RequestTypes.UPDATE_NICKNAME:
+                // nickname, nodeUUID, roomUUID
+                if (args.length != 4
+                        || args[0].getClass() != String.class
+                        || args[1].getClass() != String.class
+                        || args[2].getClass() != String.class) {
+                    throw new Exception("Argument error");
+                }
+                break;
         }
         this.requestType = requestType;
         this.requestArgs = args;

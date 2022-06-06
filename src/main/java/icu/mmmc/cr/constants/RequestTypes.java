@@ -14,4 +14,8 @@ public class RequestTypes {
      * 删除成员
      */
     public static final int DEL_MEMBER = 2;
+    /**
+     * 更新昵称
+     */
+    public static final int UPDATE_NICKNAME = 3;
 }

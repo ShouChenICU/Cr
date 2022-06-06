@@ -55,9 +55,16 @@ public interface ChatRoom {
     /**
      * 获取成员列表
      *
-     * @return 成员列表dge
+     * @return 成员列表
      */
     List<MemberInfo> getMemberList();
+
+    /**
+     * 更新自己的昵称
+     *
+     * @param nickname 昵称
+     */
+    void updateNickname(String nickname) throws Exception;
 
     /**
      * 获取消息列表

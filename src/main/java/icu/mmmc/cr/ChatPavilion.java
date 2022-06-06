@@ -201,6 +201,7 @@ public class ChatPavilion implements ChatRoom {
                     .setJoinTime(joinTime);
             // 推送新成员
             if (isOwner) {
+                // 是房主
                 synchronized (memberMap) {
                     memberMap.put(UUID, memberInfo);
                     DaoManager.getMemberDao().updateMember(memberInfo);
@@ -211,6 +212,7 @@ public class ChatPavilion implements ChatRoom {
                     }
                 }
             } else {
+                // 不是房主，但是是管理员
                 Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Room is offline");
@@ -490,6 +492,44 @@ public class ChatPavilion implements ChatRoom {
     public List<MemberInfo> getMemberList() {
         synchronized (memberMap) {
             return new ArrayList<>(memberMap.values());
+        }
+    }
+
+    /**
+     * 更新自己的昵称
+     *
+     * @param nickname 昵称
+     */
+    @Override
+    public void updateNickname(String nickname) throws Exception {
+        Objects.requireNonNull(nickname);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            String UUID = Cr.getNodeInfo().getUUID();
+            MemberInfo memberInfo = getMemberInfo(UUID);
+            if (memberInfo == null) {
+                throw new Exception("Member not found");
+            }
+            if (isOwner) {
+                memberInfo.setNickname(nickname);
+                DaoManager.getMemberDao().updateMember(memberInfo);
+                synchronized (onlineNodeMap) {
+                    for (Node node : onlineNodeMap.values()) {
+                        node.addTask(new PushTask(memberInfo, null));
+                    }
+                }
+            } else {
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    throw new Exception("Node is offline");
+                }
+                node.addTask(new RequestTask(null,
+                        RequestTypes.UPDATE_NICKNAME,
+                        roomInfo.getNodeUUID(),
+                        roomInfo.getRoomUUID()));
+            }
         }
     }
 
