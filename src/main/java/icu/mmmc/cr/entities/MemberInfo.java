@@ -36,6 +36,10 @@ public class MemberInfo implements Serialization, Checkable {
      */
     private String nickname;
     /**
+     * 标签
+     */
+    private String label;
+    /**
      * 加入时间
      */
     private long joinTime;
@@ -46,6 +50,7 @@ public class MemberInfo implements Serialization, Checkable {
 
     public MemberInfo() {
         nickname = "";
+        label = "";
     }
 
     public MemberInfo(byte[] dat) throws Exception {
@@ -55,6 +60,7 @@ public class MemberInfo implements Serialization, Checkable {
         userUUID = (String) object.get("USER_UUID");
         role = (int) object.get("ROLE");
         nickname = (String) object.get("NICKNAME");
+        label = (String) object.get("LABEL");
         joinTime = (long) object.get("JOIN_TIME");
         updateTime = (long) object.get("UPDATE_TIME");
         check();
@@ -117,6 +123,15 @@ public class MemberInfo implements Serialization, Checkable {
         return this;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
+    public MemberInfo setLabel(String label) {
+        this.label = label;
+        return this;
+    }
+
     public long getJoinTime() {
         return joinTime;
     }
@@ -160,6 +175,7 @@ public class MemberInfo implements Serialization, Checkable {
                 ", userUUID='" + userUUID + '\'' +
                 ", role=" + role +
                 ", nickname='" + nickname + '\'' +
+                ", label='" + label + '\'' +
                 ", joinTime=" + joinTime +
                 ", updateTime=" + updateTime +
                 '}';
@@ -178,6 +194,7 @@ public class MemberInfo implements Serialization, Checkable {
                 .set("USER_UUID", userUUID)
                 .set("ROLE", role)
                 .set("NICKNAME", nickname)
+                .set("LABEL", label)
                 .set("JOIN_TIME", joinTime)
                 .set("UPDATE_TIME", updateTime)
                 .serialize();

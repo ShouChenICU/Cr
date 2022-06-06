@@ -154,6 +154,7 @@ public final class ChatRoomManager {
                     .setRoomUUID(roomUUID)
                     .setUserUUID(nodeUUID)
                     .setNickname(Cr.getNodeInfo().getAttr(NodeAttributes.$TITLE))
+                    .setLabel("")
                     .setRole(MemberRoles.ROLE_OWNER)
                     .setUpdateTime(joinTime)
                     .setJoinTime(joinTime));
