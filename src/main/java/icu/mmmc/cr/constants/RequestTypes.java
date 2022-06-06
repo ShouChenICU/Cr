@@ -18,4 +18,8 @@ public class RequestTypes {
      * 更新昵称
      */
     public static final int UPDATE_NICKNAME = 3;
+    /**
+     * 发送文本消息
+     */
+    public static final int SEND_TEXT_MSG = 4;
 }

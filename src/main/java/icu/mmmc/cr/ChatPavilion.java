@@ -370,6 +370,7 @@ public class ChatPavilion implements ChatRoom {
 
     /**
      * 收到新的消息
+     * 一般房主调用
      * 可能操作数据库
      *
      * @param messageInfo 消息实体
@@ -637,7 +638,10 @@ public class ChatPavilion implements ChatRoom {
                     if (node == null || !node.isOnline()) {
                         throw new Exception("Room is offline");
                     }
-                    node.addTask(new PushTask(msg, callback));
+                    node.addTask(new RequestTask(null, RequestTypes.SEND_TEXT_MSG,
+                            roomInfo.getNodeUUID(),
+                            roomInfo.getRoomUUID(),
+                            msg));
                 }
             }
         } catch (Exception e) {

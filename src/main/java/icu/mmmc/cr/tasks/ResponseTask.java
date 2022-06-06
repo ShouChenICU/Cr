@@ -6,6 +6,7 @@ import icu.mmmc.cr.constants.MemberRoles;
 import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
+import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.exceptions.AuthenticationException;
 import icu.mmmc.cr.utils.BsonUtils;
 import icu.mmmc.cr.utils.Logger;
@@ -81,6 +82,16 @@ public class ResponseTask extends AbstractTask {
                     }
                     memberInfo.setNickname(nickname);
                     pavilion.updateMemberInfo(memberInfo);
+                    break;
+                case RequestTypes.SEND_TEXT_MSG:
+                    nodeUUID = (String) object.get("0");
+                    roomUUID = (String) object.get("1");
+                    MessageInfo messageInfo = new MessageInfo((byte[]) object.get("2"));
+                    pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+                    if (pavilion == null) {
+                        throw new Exception("Room not found");
+                    }
+                    pavilion.receiveMessage(messageInfo);
                     break;
             }
         } catch (Exception e) {

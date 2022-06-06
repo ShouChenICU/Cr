@@ -5,6 +5,7 @@ import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
+import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.utils.BsonObject;
 
 /**
@@ -28,6 +29,8 @@ public class RequestTask extends AbstractTask {
                 break;
             case RequestTypes.DEL_MEMBER:
                 // nodeUUID, roomUUID, memberUUID
+            case RequestTypes.UPDATE_NICKNAME:
+                // nickname, nodeUUID, roomUUID
                 if (args.length != 3
                         || args[0].getClass() != String.class
                         || args[1].getClass() != String.class
@@ -35,12 +38,12 @@ public class RequestTask extends AbstractTask {
                     throw new Exception("Argument error");
                 }
                 break;
-            case RequestTypes.UPDATE_NICKNAME:
-                // nickname, nodeUUID, roomUUID
-                if (args.length != 4
+            case RequestTypes.SEND_TEXT_MSG:
+                // nodeUUID, roomUUID, messageInfo
+                if (args.length != 3
                         || args[0].getClass() != String.class
                         || args[1].getClass() != String.class
-                        || args[2].getClass() != String.class) {
+                        || args[2].getClass() != MessageInfo.class) {
                     throw new Exception("Argument error");
                 }
                 break;
@@ -70,11 +73,20 @@ public class RequestTask extends AbstractTask {
                         .serialize());
                 break;
             case RequestTypes.DEL_MEMBER:
+            case RequestTypes.UPDATE_NICKNAME:
                 sendData(TaskTypes.REQUEST, new BsonObject()
                         .set("REQ_TYPE", requestType)
                         .set("0", requestArgs[0])
                         .set("1", requestArgs[1])
                         .set("2", requestArgs[2])
+                        .serialize());
+                break;
+            case RequestTypes.SEND_TEXT_MSG:
+                sendData(TaskTypes.REQUEST, new BsonObject()
+                        .set("REQ_TYPE", requestType)
+                        .set("0", requestArgs[0])
+                        .set("1", requestArgs[1])
+                        .set("2", ((MessageInfo) requestArgs[2]).serialize())
                         .serialize());
                 break;
         }
