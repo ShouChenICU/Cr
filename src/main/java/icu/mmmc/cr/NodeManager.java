@@ -74,7 +74,8 @@ public final class NodeManager {
             String msg = "Start connect";
             Logger.debug(msg);
             callback.start();
-            channel = SocketChannel.open(address);
+            channel = SocketChannel.open();
+            channel.socket().connect(address, 460);
             msg = "Connecting to " + channel.getRemoteAddress();
             Logger.info(msg);
             callback.update(0, msg);

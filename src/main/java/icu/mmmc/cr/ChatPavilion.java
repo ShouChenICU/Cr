@@ -117,6 +117,7 @@ public class ChatPavilion implements ChatRoom {
                 throw new Exception("Room info illegal");
             }
             this.roomInfo = roomInfo;
+            DaoManager.getRoomDao().updateRoomInfo(roomInfo);
         }
         if (isOwner) {
             synchronized (onlineNodeMap) {
@@ -503,6 +504,16 @@ public class ChatPavilion implements ChatRoom {
     }
 
     /**
+     * 获取成员数量
+     *
+     * @return 成员数量
+     */
+    @Override
+    public int getMemberCount() {
+        return memberMap.size();
+    }
+
+    /**
      * 更新自己的昵称
      *
      * @param nickname 昵称
@@ -537,6 +548,29 @@ public class ChatPavilion implements ChatRoom {
                         roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
             }
+        }
+    }
+
+    /**
+     * 更新房间名称
+     *
+     * @param title 房间名
+     */
+    @Override
+    public void updateRoomTitle(String title) throws Exception {
+        Objects.requireNonNull(title);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            if (!isOwner) {
+                throw new AuthenticationException("Permission deny");
+            }
+            if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
+                throw new Exception("Title out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
+            }
+            roomInfo.setTitle(title);
+            updateRoomInfo(roomInfo);
         }
     }
 

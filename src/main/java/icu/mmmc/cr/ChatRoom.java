@@ -60,11 +60,25 @@ public interface ChatRoom {
     List<MemberInfo> getMemberList();
 
     /**
+     * 获取成员数量
+     *
+     * @return 成员数量
+     */
+    int getMemberCount();
+
+    /**
      * 更新自己的昵称
      *
      * @param nickname 昵称
      */
     void updateNickname(String nickname) throws Exception;
+
+    /**
+     * 更新房间名称
+     *
+     * @param title 房间名
+     */
+    void updateRoomTitle(String title) throws Exception;
 
     /**
      * 获取消息列表
