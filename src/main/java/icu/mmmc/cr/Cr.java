@@ -1,6 +1,7 @@
 package icu.mmmc.cr;
 
 import icu.mmmc.cr.callbacks.*;
+import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.exceptions.IdentityException;
 import icu.mmmc.cr.utils.KeyUtils;
@@ -10,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Cr核心主类
@@ -107,13 +109,24 @@ public class Cr {
          * @param callback   回调
          */
         public static void connectToNode(InetSocketAddress address, String expectUUID, ProgressCallback callback) {
+            if (callback == null) {
+                callback = new ProgressAdapter();
+            }
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
                     callback.halt("Cr not initialized");
                     return;
                 }
-                NodeManager.connectToNode(address, expectUUID, callback);
+                Node node = NodeManager.getByUUID(expectUUID);
+                if (node != null) {
+                    String err = "Connect repeatedly " + expectUUID;
+                    Logger.warn(err);
+                    callback.halt(err);
+                } else {
+                    ProgressCallback finalCallback = callback;
+                    WorkerThreadPool.execute(() -> NodeManager.connectToNode(address, expectUUID, finalCallback));
+                }
             }
         }
 
@@ -122,7 +135,10 @@ public class Cr {
          *
          * @param uuid 节点标识码
          */
-        public static void disconnectToNode(String uuid) {
+        public static void disconnectToNode(String uuid, ProgressCallback callback) {
+            if (callback == null) {
+                callback = new ProgressAdapter();
+            }
             synchronized (LOCK) {
                 if (nodeInfo == null) {
                     Logger.warn("Cr not initialized");
@@ -132,8 +148,10 @@ public class Cr {
                 if (node != null) {
                     try {
                         node.disconnect();
+                        callback.done();
                     } catch (Exception e) {
                         Logger.warn(e);
+                        callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
                     }
                 }
             }

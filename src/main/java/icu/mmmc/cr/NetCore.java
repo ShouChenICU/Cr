@@ -71,10 +71,10 @@ class NetCore {
             while (iterator.hasNext()) {
                 SelectionKey key = iterator.next();
                 iterator.remove();
-                if (key.isAcceptable()) {
-                    Logger.debug("Accept");
-                    ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
-                    try {
+                try {
+                    if (key.isAcceptable()) {
+                        Logger.debug("Accept");
+                        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
                         SocketChannel channel = serverChannel.accept();
                         channel.configureBlocking(false);
                         SelectionKey key0 = channel.register(selector, 0);
@@ -86,11 +86,7 @@ class NetCore {
                             key0.cancel();
                         }
                         continue;
-                    } catch (IOException e) {
-                        Logger.warn(e);
                     }
-                }
-                try {
                     if (key.isReadable()) {
                         Logger.debug("Read");
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
@@ -102,6 +98,11 @@ class NetCore {
                         WorkerThreadPool.execute(() -> ((Node) key.attachment()).doPost());
                     }
                 } catch (Exception e) {
+                    if (key.channel() == serverSocketChannel) {
+                        Logger.error(e);
+                        halt();
+                        return;
+                    }
                     Logger.warn(e);
                 }
             }

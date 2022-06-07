@@ -142,15 +142,21 @@ public class ChatPavilion implements ChatRoom {
                     || !Objects.equals(memberInfo.getRoomUUID(), roomInfo.getRoomUUID())) {
                 throw new Exception("Member info illegal");
             }
-            synchronized (memberMap) {
-                memberMap.put(memberInfo.getUserUUID(), memberInfo);
-                DaoManager.getMemberDao().updateMember(memberInfo);
-            }
-        }
-        if (isOwner) {
-            synchronized (onlineNodeMap) {
-                for (Node node : onlineNodeMap.values()) {
-                    node.addTask(new PushTask(memberInfo, null));
+            if (isOwner) {
+                memberInfo.setUpdateTime(System.currentTimeMillis());
+                synchronized (memberMap) {
+                    memberMap.put(memberInfo.getUserUUID(), memberInfo);
+                    DaoManager.getMemberDao().updateMember(memberInfo);
+                }
+                synchronized (onlineNodeMap) {
+                    for (Node node : onlineNodeMap.values()) {
+                        node.addTask(new PushTask(memberInfo, null));
+                    }
+                }
+            } else {
+                synchronized (memberMap) {
+                    memberMap.put(memberInfo.getUserUUID(), memberInfo);
+                    DaoManager.getMemberDao().updateMember(memberInfo);
                 }
             }
         }

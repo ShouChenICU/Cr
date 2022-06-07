@@ -119,8 +119,7 @@ public final class NodeManager {
                             String s = "Connect repeatedly " + uuid;
                             finalCallback.halt(s);
                             Logger.warn(s);
-                            nodeInfo = null;
-                            disconnect();
+                            super.disconnect();
                         } else {
                             NODE_MAP.put(uuid, this);
                             ChatRoomManager.registerNode(this);
@@ -147,7 +146,11 @@ public final class NodeManager {
                 synchronized (CONNECTING_NODE_LIST) {
                     CONNECTING_NODE_LIST.remove(this);
                 }
-                disconnect();
+                try {
+                    super.disconnect();
+                } catch (Exception e) {
+                    Logger.warn(e);
+                }
             }
 
             @Override
