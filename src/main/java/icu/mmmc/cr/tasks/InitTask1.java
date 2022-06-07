@@ -120,6 +120,10 @@ public class InitTask1 extends AbstractTask {
                 halt(e.toString());
             }
         } else if (stepCount == 2) {
+            // 更新对方的信息
+            nodeInfo = new NodeInfo(data);
+            // 发送自己的信息
+            sendData(TaskTypes.ACK, Cr.getNodeInfo().serialize());
             done();
         } else {
             halt("");

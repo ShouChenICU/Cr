@@ -8,7 +8,6 @@ import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.database.interfaces.NodeInfoDao;
 import icu.mmmc.cr.entities.NodeInfo;
 import icu.mmmc.cr.tasks.InitTask1;
-import icu.mmmc.cr.tasks.PushTask;
 import icu.mmmc.cr.tasks.SyncRoomTask1;
 import icu.mmmc.cr.utils.Logger;
 
@@ -121,6 +120,7 @@ public final class NodeManager {
                             Logger.warn(s);
                             super.disconnect();
                         } else {
+                            updateNodeInfo(nodeInfo);
                             NODE_MAP.put(uuid, this);
                             ChatRoomManager.registerNode(this);
                             heartTest(this);
@@ -131,8 +131,7 @@ public final class NodeManager {
                                 callback1.connected(nodeInfo);
                             }
                             checkTaskTimeOut();
-                            // 连接成功后给对方推送自己的完整信息
-                            addTask(new PushTask(Cr.getNodeInfo(), null));
+                            // 连接成功后开始同步房间
                             addTask(new SyncRoomTask1(null));
                         }
                     }
@@ -289,22 +288,20 @@ public final class NodeManager {
         }
         String uuid = nodeInfo.getUUID();
         NodeInfoDao dao = DaoManager.getNodeInfoDao();
-        if (dao != null) {
-            // 获取数据库保存的该节点信息
-            NodeInfo info = dao.getByUUID(uuid);
-            if (info != null) {
-                try {
-                    info.check();
-                    // 如果保存的数据比较新，就不覆盖了
-                    if (info.getTimestamp() >= nodeInfo.getTimestamp()) {
-                        Logger.debug("Node info is old");
-                        return;
-                    }
-                } catch (Exception ignored) {
+        // 获取数据库保存的该节点信息
+        NodeInfo info = dao.getByUUID(uuid);
+        if (info != null) {
+            try {
+                info.check();
+                // 如果保存的数据比较新，就不覆盖了
+                if (info.getTimestamp() >= nodeInfo.getTimestamp()) {
+                    Logger.debug("Node info is old");
+                    return;
                 }
+            } catch (Exception ignored) {
             }
-            dao.updateNodeInfo(nodeInfo);
         }
+        dao.updateNodeInfo(nodeInfo);
         Node node = NODE_MAP.get(uuid);
         if (node != null) {
             node.setNodeInfo(nodeInfo);

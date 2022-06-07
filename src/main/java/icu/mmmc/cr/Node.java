@@ -152,9 +152,9 @@ public abstract class Node extends NetNode {
             synchronized (waitSendPacketQueue) {
                 if (waitSendPacketQueue.size() > 0) {
                     packetBody = waitSendPacketQueue.poll();
+                    sendPacketCount++;
                 } else {
                     postLock.unlock();
-                    sendPacketCount++;
                     return;
                 }
             }

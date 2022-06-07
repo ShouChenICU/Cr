@@ -106,15 +106,19 @@ public class InitTask0 extends AbstractTask {
             // 用对方公钥加密并发送验证码
             sendData(TaskTypes.ACK, cipher.doFinal(authCode));
         } else if (stepCount == 2) {
+            stepCount = 3;
             // 验证对方发来的验证码
             if (Arrays.equals(data, authCode)) {
-                sendData(TaskTypes.ACK, null);
-                done();
+                // 验证通过，发送自己的节点信息
+                sendData(TaskTypes.ACK, Cr.getNodeInfo().serialize());
             } else {
                 String s = "身份验证失败";
                 sendError(s);
                 halt(s);
             }
+        } else if (stepCount == 3) {
+            nodeInfo = new NodeInfo(data);
+            done();
         } else {
             halt("");
         }
