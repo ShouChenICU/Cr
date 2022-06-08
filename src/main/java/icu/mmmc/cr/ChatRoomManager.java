@@ -267,7 +267,7 @@ public final class ChatRoomManager {
      *
      * @return 房间列表
      */
-    static List<ChatRoom> getManageRoomList() {
+    public static List<ChatRoom> getManageRoomList() {
         synchronized (MANAGE_ROOM_MAP) {
             return new ArrayList<>(MANAGE_ROOM_MAP.values());
         }

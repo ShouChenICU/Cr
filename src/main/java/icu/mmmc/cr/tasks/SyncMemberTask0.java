@@ -61,13 +61,14 @@ public class SyncMemberTask0 extends AbstractTask {
             BasicBSONObject object = (BasicBSONObject) BsonUtils.deserialize(data);
             Iterator<Map.Entry<String, Object>> iterator = object.entrySet().iterator();
             while (iterator.hasNext()) {
-                MemberInfo info1 = (MemberInfo) iterator.next();
-                MemberInfo info2 = memberInfoMap.get(info1.getUserUUID());
-                if (info2 != null) {
-                    if (info1.getUpdateTime() != info2.getUpdateTime()) {
-                        update.set(info2.getUserUUID(), info2.serialize());
+                Map.Entry<String, Object> entry = iterator.next();
+                long timestamp = (long) entry.getValue();
+                MemberInfo info = memberInfoMap.get(entry.getKey());
+                if (info != null) {
+                    if (info.getUpdateTime() != timestamp) {
+                        update.set(entry.getKey(), info.serialize());
                     }
-                    memberInfoMap.remove(info1.getUserUUID());
+                    memberInfoMap.remove(entry.getKey());
                     iterator.remove();
                 }
             }

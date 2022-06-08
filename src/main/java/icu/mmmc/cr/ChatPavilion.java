@@ -2,6 +2,7 @@ package icu.mmmc.cr;
 
 import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
+import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.*;
 import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.entities.MemberInfo;
@@ -16,7 +17,7 @@ import icu.mmmc.cr.tasks.SyncMessageTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 聊天室实现
@@ -29,8 +30,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ChatPavilion implements ChatRoom {
     private volatile boolean isAvailable;
     private final Object availLock;
-    private final ReentrantLock syncMemberLock;
-    private final ReentrantLock syncMessageLock;
+    private final AtomicBoolean isSyncMember;
+    private final AtomicBoolean isSyncMessage;
     private int unreadCount;
     /**
      * 房间信息
@@ -76,8 +77,8 @@ public class ChatPavilion implements ChatRoom {
         onlineNodeMap = new HashMap<>();
         messageList = new ArrayList<>();
         messageIdSet = new HashSet<>();
-        syncMemberLock = new ReentrantLock();
-        syncMessageLock = new ReentrantLock();
+        isSyncMember = new AtomicBoolean();
+        isSyncMessage = new AtomicBoolean();
         unreadCount = 0;
     }
 
@@ -182,7 +183,7 @@ public class ChatPavilion implements ChatRoom {
             }
             // 检查是否有权限
             String myUUID = Cr.getNodeInfo().getUUID();
-            if (!Objects.equals(myUUID, roomInfo.getNodeUUID())) {
+            if (!isOwner) {
                 // 不是房主
                 synchronized ((memberMap)) {
                     MemberInfo myInfo = memberMap.get(myUUID);
@@ -217,6 +218,10 @@ public class ChatPavilion implements ChatRoom {
                     for (Node node : onlineNodeMap.values()) {
                         node.addTask(new PushTask(memberInfo, null));
                     }
+                }
+                Node node = NodeManager.getByUUID(UUID);
+                if (node != null && node.isOnline()) {
+                    node.addTask(new PushTask(roomInfo, null));
                 }
             } else {
                 // 不是房主，但是是管理员
@@ -383,6 +388,7 @@ public class ChatPavilion implements ChatRoom {
      * @param messageInfo 消息实体
      */
     public void receiveMessage(MessageInfo messageInfo) throws Exception {
+        Objects.requireNonNull(messageInfo);
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
@@ -582,6 +588,9 @@ public class ChatPavilion implements ChatRoom {
      */
     @Override
     public MemberInfo getMemberInfo(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
         synchronized (memberMap) {
             return memberMap.get(uuid);
         }
@@ -595,6 +604,9 @@ public class ChatPavilion implements ChatRoom {
      */
     @Override
     public boolean containMember(String uuid) {
+        if (uuid == null) {
+            return false;
+        }
         synchronized (memberMap) {
             return memberMap.containsKey(uuid);
         }
@@ -656,6 +668,9 @@ public class ChatPavilion implements ChatRoom {
      */
     @Override
     public void postMessage(String content, ProgressCallback callback) {
+        if (callback == null) {
+            callback = new ProgressAdapter();
+        }
         try {
             synchronized (availLock) {
                 if (!isAvailable) {
@@ -673,12 +688,24 @@ public class ChatPavilion implements ChatRoom {
                         .setType(MessageTypes.TYPE_TEXT);
                 if (isOwner) {
                     receiveMessage(msg);
+                    callback.done();
                 } else {
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                     if (node == null || !node.isOnline()) {
                         throw new Exception("Room is offline");
                     }
-                    node.addTask(new RequestTask(null, RequestTypes.SEND_TEXT_MSG,
+                    ProgressCallback finalCallback = callback;
+                    node.addTask(new RequestTask(new ProgressAdapter() {
+                        @Override
+                        public void done() {
+                            finalCallback.done();
+                        }
+
+                        @Override
+                        public void halt(String msg) {
+                            finalCallback.halt(msg);
+                        }
+                    }, RequestTypes.SEND_TEXT_MSG,
                             roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID(),
                             msg));
@@ -697,6 +724,9 @@ public class ChatPavilion implements ChatRoom {
      */
     @Override
     public void syncMessagesBeforeTime(long timeStamp, ProgressCallback callback) {
+        if (callback == null) {
+            callback = new ProgressAdapter();
+        }
         try {
             synchronized (availLock) {
                 if (!isAvailable) {
@@ -705,27 +735,28 @@ public class ChatPavilion implements ChatRoom {
                     callback.done();
                     return;
                 }
+                ProgressCallback finalCallback = callback;
                 SyncMessageTask1 syncMessageTask1 = new SyncMessageTask1(this, timeStamp, new ProgressCallback() {
                     @Override
                     public void start() {
-                        callback.start();
+                        finalCallback.start();
                     }
 
                     @Override
                     public void update(double status, String msg) {
-                        callback.update(status, msg);
+                        finalCallback.update(status, msg);
                     }
 
                     @Override
                     public void done() {
-                        callback.done();
-                        syncMessageLock.unlock();
+                        finalCallback.done();
+                        isSyncMessage.set(false);
                     }
 
                     @Override
                     public void halt(String msg) {
-                        callback.halt(msg);
-                        syncMessageLock.unlock();
+                        finalCallback.halt(msg);
+                        isSyncMessage.set(false);
                     }
                 });
                 Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
@@ -733,7 +764,7 @@ public class ChatPavilion implements ChatRoom {
                     callback.halt("Node is offline");
                     return;
                 }
-                if (syncMessageLock.tryLock()) {
+                if (!isSyncMessage.getAndSet(true)) {
                     node.addTask(syncMessageTask1);
                 }
             }
@@ -748,6 +779,9 @@ public class ChatPavilion implements ChatRoom {
      */
     @Override
     public void syncMembers(ProgressCallback callback) {
+        if (callback == null) {
+            callback = new ProgressAdapter();
+        }
         try {
             synchronized (availLock) {
                 if (!isAvailable) {
@@ -761,28 +795,29 @@ public class ChatPavilion implements ChatRoom {
                     callback.halt("Node is offline");
                     return;
                 }
-                if (syncMemberLock.tryLock()) {
+                if (!isSyncMember.getAndSet(true)) {
+                    ProgressCallback finalCallback = callback;
                     node.addTask(new SyncMemberTask1(this, new ProgressCallback() {
                         @Override
                         public void start() {
-                            callback.start();
+                            finalCallback.start();
                         }
 
                         @Override
                         public void update(double status, String msg) {
-                            callback.update(status, msg);
+                            finalCallback.update(status, msg);
                         }
 
                         @Override
                         public void done() {
-                            callback.done();
-                            syncMemberLock.unlock();
+                            finalCallback.done();
+                            isSyncMember.set(false);
                         }
 
                         @Override
                         public void halt(String msg) {
-                            callback.halt(msg);
-                            syncMemberLock.unlock();
+                            finalCallback.halt(msg);
+                            isSyncMember.set(false);
                         }
                     }));
                 }

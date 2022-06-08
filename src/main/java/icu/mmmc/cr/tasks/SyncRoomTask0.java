@@ -1,14 +1,15 @@
 package icu.mmmc.cr.tasks;
 
-import icu.mmmc.cr.Cr;
+import icu.mmmc.cr.ChatRoom;
+import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.Node;
 import icu.mmmc.cr.WorkerThreadPool;
 import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.TaskTypes;
-import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.entities.RoomInfo;
 import icu.mmmc.cr.utils.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -61,7 +62,12 @@ public class SyncRoomTask0 extends AbstractTask {
     @Override
     public void init(Node node, int taskId) {
         super.init(node, taskId);
-        roomInfoList = DaoManager.getRoomDao().getByOwnUUIDAndContainMember(Cr.getNodeInfo().getUUID(), node.getNodeInfo().getUUID());
+        roomInfoList = new ArrayList<>();
+        for (ChatRoom chatRoom : ChatRoomManager.getManageRoomList()) {
+            if (chatRoom.containMember(node.getNodeInfo().getUUID())) {
+                roomInfoList.add(chatRoom.getRoomInfo());
+            }
+        }
         latch = new CountDownLatch(roomInfoList.size());
     }
 }

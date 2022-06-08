@@ -8,6 +8,7 @@ import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.utils.BsonObject;
 import icu.mmmc.cr.utils.BsonUtils;
+import icu.mmmc.cr.utils.Logger;
 import org.bson.BasicBSONObject;
 
 import java.nio.charset.StandardCharsets;
@@ -50,7 +51,11 @@ public class SyncMemberTask1 extends AbstractTask {
             stepCount = 2;
             BasicBSONObject object = (BasicBSONObject) BsonUtils.deserialize(data);
             for (String uuid : object.keySet()) {
-                chatPavilion.deleteMember(uuid);
+                try {
+                    chatPavilion.deleteMember(uuid);
+                } catch (Exception e) {
+                    Logger.warn(e);
+                }
             }
             sendData(TaskTypes.ACK, null);
         } else if (stepCount == 2) {

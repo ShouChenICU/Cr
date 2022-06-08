@@ -53,16 +53,4 @@ public class RoomDaoAdapter implements RoomDao {
     public List<RoomInfo> getAllRoomInfos() {
         return new ArrayList<>();
     }
-
-    /**
-     * 获取指定房主并且包含指定成员的房间信息列表
-     *
-     * @param nodeUUID   房主标识码
-     * @param memberUUID 成员标识码
-     * @return 房间列表
-     */
-    @Override
-    public List<RoomInfo> getByOwnUUIDAndContainMember(String nodeUUID, String memberUUID) {
-        return new ArrayList<>();
-    }
 }

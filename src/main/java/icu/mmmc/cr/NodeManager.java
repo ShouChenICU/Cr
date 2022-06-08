@@ -75,7 +75,7 @@ public final class NodeManager {
             Logger.debug(msg);
             callback.start();
             channel = SocketChannel.open();
-            channel.socket().connect(address, 460);
+            channel.socket().connect(address, 666);
             msg = "Connecting to " + channel.getRemoteAddress();
             Logger.info(msg);
             callback.update(0, msg);
@@ -198,6 +198,9 @@ public final class NodeManager {
      * @return 节点
      */
     static Node getByUUID(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
         return NODE_MAP.get(uuid);
     }
 
