@@ -74,6 +74,13 @@ public interface ChatRoom {
     void updateNickname(String nickname) throws Exception;
 
     /**
+     * 更新自己的头衔
+     *
+     * @param label 头衔
+     */
+    void updateLabel(String label) throws Exception;
+
+    /**
      * 更新房间名称
      *
      * @param title 房间名
@@ -115,6 +122,20 @@ public interface ChatRoom {
      * @param callback 进度回调
      */
     void postMessage(String content, ProgressCallback callback);
+
+    /**
+     * 授权管理员权限
+     *
+     * @param userUUID 成员标识码
+     */
+    void grantAdminPermission(String userUUID) throws Exception;
+
+    /**
+     * 撤销管理员权限
+     *
+     * @param userUUID 成员标识码
+     */
+    void revokeAdminPermission(String userUUID) throws Exception;
 
     /**
      * 同步指定时间之前的消息列表

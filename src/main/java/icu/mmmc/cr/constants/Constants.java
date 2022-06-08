@@ -24,6 +24,10 @@ public class Constants {
      */
     public static final int MAX_NICKNAME_LENGTH = 32;
     /**
+     * 最大头衔长度
+     */
+    public static final int MAX_LABEL_LENGTH = 6;
+    /**
      * 最大消息内容长度
      */
     public static final int MAX_MSG_PAYLOAD_LENGTH = 4096;

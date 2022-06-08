@@ -2,6 +2,8 @@ package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.ChatPavilion;
 import icu.mmmc.cr.ChatRoomManager;
+import icu.mmmc.cr.Cr;
+import icu.mmmc.cr.callbacks.ChatRoomUpdateCallback;
 import icu.mmmc.cr.constants.MemberRoles;
 import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -62,9 +64,23 @@ public class ResponseTask extends AbstractTask {
                     if (Objects.equals(pavilion.getRoomInfo().getNodeUUID(), node.getNodeInfo().getUUID())) {
                         pavilion.deleteMember(userUUID);
                     } else if (info.getRole() == MemberRoles.ROLE_ADMIN) {
-                        pavilion.deleteMember(userUUID);
+                        pavilion.removeMember(userUUID);
                     } else {
                         throw new AuthenticationException("Permission deny");
+                    }
+                    break;
+                case RequestTypes.UPDATE_ROOM_TITLE:
+                    String title = (String) object.get("0");
+                    nodeUUID = (String) object.get("1");
+                    roomUUID = (String) object.get("2");
+                    pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+                    if (pavilion == null) {
+                        throw new Exception("Room not found");
+                    }
+                    pavilion.updateRoomTitle(title);
+                    ChatRoomUpdateCallback callback = Cr.CallBack.chatRoomUpdateCallback;
+                    if (callback != null) {
+                        callback.update();
                     }
                     break;
                 case RequestTypes.UPDATE_NICKNAME:
@@ -81,6 +97,22 @@ public class ResponseTask extends AbstractTask {
                         throw new Exception("Member not found");
                     }
                     memberInfo.setNickname(nickname);
+                    pavilion.updateMemberInfo(memberInfo);
+                    break;
+                case RequestTypes.UPDATE_LABEL:
+                    String label = (String) object.get("0");
+                    nodeUUID = (String) object.get("1");
+                    roomUUID = (String) object.get("2");
+                    userUUID = node.getNodeInfo().getUUID();
+                    pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+                    if (pavilion == null) {
+                        throw new Exception("Room not found");
+                    }
+                    memberInfo = pavilion.getMemberInfo(userUUID);
+                    if (memberInfo == null) {
+                        throw new Exception("Member not found");
+                    }
+                    memberInfo.setLabel(label);
                     pavilion.updateMemberInfo(memberInfo);
                     break;
                 case RequestTypes.SEND_TEXT_MSG:

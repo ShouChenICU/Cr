@@ -3,15 +3,12 @@ package icu.mmmc.cr.tasks;
 import icu.mmmc.cr.ChatRoom;
 import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.Node;
-import icu.mmmc.cr.WorkerThreadPool;
-import icu.mmmc.cr.callbacks.adapters.ProgressAdapter;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.RoomInfo;
-import icu.mmmc.cr.utils.Logger;
+import icu.mmmc.cr.utils.BsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * 同步房间任务（被动
@@ -19,7 +16,6 @@ import java.util.concurrent.CountDownLatch;
  * @author shouchen
  */
 public class SyncRoomTask0 extends AbstractTask {
-    private CountDownLatch latch;
     private List<RoomInfo> roomInfoList;
 
     public SyncRoomTask0() {
@@ -33,30 +29,14 @@ public class SyncRoomTask0 extends AbstractTask {
      */
     @Override
     protected void handleData(byte[] data) throws Exception {
-        while (!roomInfoList.isEmpty()) {
-            RoomInfo roomInfo = roomInfoList.remove(0);
-            node.addTask(new PushTask(roomInfo, new ProgressAdapter() {
-                @Override
-                public void done() {
-                    latch.countDown();
-                }
-
-                @Override
-                public void halt(String msg) {
-                    latch.countDown();
-                }
-            }));
+        List<byte[]> list = new ArrayList<>();
+        BsonObject object = new BsonObject();
+        for (RoomInfo roomInfo : roomInfoList) {
+            list.add(roomInfo.serialize());
         }
-        WorkerThreadPool.execute(() -> {
-            try {
-                latch.await();
-                sendData(TaskTypes.ACK, null);
-                done();
-            } catch (InterruptedException e) {
-                Logger.warn(e);
-                halt(e.toString());
-            }
-        });
+        object.set("ROOM_LIST", list);
+        sendData(TaskTypes.ACK, object.serialize());
+        done();
     }
 
     @Override
@@ -68,6 +48,5 @@ public class SyncRoomTask0 extends AbstractTask {
                 roomInfoList.add(chatRoom.getRoomInfo());
             }
         }
-        latch = new CountDownLatch(roomInfoList.size());
     }
 }

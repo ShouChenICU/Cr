@@ -14,12 +14,14 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class MessageDaoAdapter implements MessageDao {
     /**
-     * 从数据库删除消息
+     * 从数据库删除指定时间之前的消息
      *
-     * @param messageInfo 消息实体
+     * @param nodeUUID  节点标识码
+     * @param roomUUID  房间标识码
+     * @param timestamp 时间戳
      */
     @Override
-    public void deleteMessage(MessageInfo messageInfo) {
+    public void deleteMessagesBefore(String nodeUUID, String roomUUID, long timestamp) {
     }
 
     /**
@@ -34,15 +36,17 @@ public class MessageDaoAdapter implements MessageDao {
     /**
      * 获取最大的id
      *
+     * @param nodeUUID 节点标识码
+     * @param roomUUID 房间标识码
      * @return id
      */
     @Override
-    public int getMaxID() {
+    public int getMaxID(String nodeUUID, String roomUUID) {
         return 0;
     }
 
     /**
-     * 获取指定房间的指定时间之前的消息列表
+     * 获取指定房间的指定时间之前的指定数量的消息列表
      *
      * @param nodeUUID  节点标识码
      * @param roomUUID  房间标识码

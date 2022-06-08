@@ -12,11 +12,13 @@ import java.util.List;
 @SuppressWarnings("unused")
 public interface MessageDao {
     /**
-     * 从数据库删除消息
+     * 从数据库删除指定时间之前的消息
      *
-     * @param messageInfo 消息实体
+     * @param nodeUUID  节点标识码
+     * @param roomUUID  房间标识码
+     * @param timestamp 时间戳
      */
-    void deleteMessage(MessageInfo messageInfo);
+    void deleteMessagesBefore(String nodeUUID, String roomUUID, long timestamp);
 
     /**
      * 向数据库添加一个消息记录
@@ -28,12 +30,14 @@ public interface MessageDao {
     /**
      * 获取最大的id
      *
+     * @param nodeUUID 节点标识码
+     * @param roomUUID 房间标识码
      * @return id
      */
-    int getMaxID();
+    int getMaxID(String nodeUUID, String roomUUID);
 
     /**
-     * 获取指定房间的指定时间之前的消息列表
+     * 获取指定房间的指定时间之前的指定数量的消息列表
      *
      * @param nodeUUID  节点标识码
      * @param roomUUID  房间标识码

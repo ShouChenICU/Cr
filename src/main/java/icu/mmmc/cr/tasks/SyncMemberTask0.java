@@ -66,7 +66,7 @@ public class SyncMemberTask0 extends AbstractTask {
                 MemberInfo info = memberInfoMap.get(entry.getKey());
                 if (info != null) {
                     if (info.getUpdateTime() != timestamp) {
-                        update.set(entry.getKey(), info.serialize());
+                        update.set(info.getUserUUID(), info.serialize());
                     }
                     memberInfoMap.remove(entry.getKey());
                     iterator.remove();

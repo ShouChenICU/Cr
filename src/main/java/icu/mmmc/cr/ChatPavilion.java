@@ -77,8 +77,8 @@ public class ChatPavilion implements ChatRoom {
         onlineNodeMap = new HashMap<>();
         messageList = new ArrayList<>();
         messageIdSet = new HashSet<>();
-        isSyncMember = new AtomicBoolean();
-        isSyncMessage = new AtomicBoolean();
+        isSyncMember = new AtomicBoolean(false);
+        isSyncMessage = new AtomicBoolean(false);
         unreadCount = 0;
     }
 
@@ -250,13 +250,16 @@ public class ChatPavilion implements ChatRoom {
             synchronized (memberMap) {
                 // 检查是否有权限
                 String myUUID = Cr.getNodeInfo().getUUID();
-                if (!Objects.equals(myUUID, roomInfo.getNodeUUID())) {
+                if (!isOwner) {
                     // 不是房主
                     MemberInfo myInfo = memberMap.get(myUUID);
                     if (myInfo == null || myInfo.getRole() != MemberRoles.ROLE_ADMIN) {
                         // 也不是管理员
                         throw new AuthenticationException("Permission deny");
                     }
+                }
+                if (Objects.equals(UUID, roomInfo.getNodeUUID())) {
+                    throw new Exception("Cannot remove homeowner");
                 }
                 memberInfo = memberMap.get(UUID);
                 if (memberInfo == null) {
@@ -303,28 +306,19 @@ public class ChatPavilion implements ChatRoom {
      */
     public void deleteMember(String userUUID) throws Exception {
         Objects.requireNonNull(userUUID);
-        MemberInfo memberInfo;
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
             }
             synchronized (memberMap) {
-                if (memberMap.containsKey(userUUID)) {
+                if (!memberMap.containsKey(userUUID)) {
                     throw new Exception("Member already removed");
                 }
-                memberInfo = memberMap.remove(userUUID);
+                memberMap.remove(userUUID);
                 DaoManager.getMemberDao()
                         .deleteMember(roomInfo.getNodeUUID(),
                                 roomInfo.getRoomUUID(),
                                 userUUID);
-            }
-        }
-        if (isOwner) {
-            for (Node node : onlineNodeMap.values()) {
-                node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
-                        memberInfo.getNodeUUID(),
-                        memberInfo.getRoomUUID(),
-                        userUUID));
             }
         }
     }
@@ -536,8 +530,12 @@ public class ChatPavilion implements ChatRoom {
             if (memberInfo == null) {
                 throw new Exception("Member not found");
             }
+            if (nickname.length() > Constants.MAX_NICKNAME_LENGTH) {
+                throw new Exception("Nickname length out of range " + Constants.MAX_NICKNAME_LENGTH);
+            }
             if (isOwner) {
-                memberInfo.setNickname(nickname);
+                memberInfo.setNickname(nickname)
+                        .setUpdateTime(System.currentTimeMillis());
                 DaoManager.getMemberDao().updateMember(memberInfo);
                 synchronized (onlineNodeMap) {
                     for (Node node : onlineNodeMap.values()) {
@@ -551,6 +549,50 @@ public class ChatPavilion implements ChatRoom {
                 }
                 node.addTask(new RequestTask(null,
                         RequestTypes.UPDATE_NICKNAME,
+                        nickname,
+                        roomInfo.getNodeUUID(),
+                        roomInfo.getRoomUUID()));
+            }
+        }
+    }
+
+    /**
+     * 更新自己的头衔
+     *
+     * @param label 头衔
+     */
+    @Override
+    public void updateLabel(String label) throws Exception {
+        Objects.requireNonNull(label);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            String UUID = Cr.getNodeInfo().getUUID();
+            MemberInfo memberInfo = getMemberInfo(UUID);
+            if (memberInfo == null) {
+                throw new Exception("Member not found");
+            }
+            if (label.length() > Constants.MAX_LABEL_LENGTH) {
+                throw new Exception("Label length out of range " + Constants.MAX_LABEL_LENGTH);
+            }
+            if (isOwner) {
+                memberInfo.setLabel(label)
+                        .setUpdateTime(System.currentTimeMillis());
+                DaoManager.getMemberDao().updateMember(memberInfo);
+                synchronized (onlineNodeMap) {
+                    for (Node node : onlineNodeMap.values()) {
+                        node.addTask(new PushTask(memberInfo, null));
+                    }
+                }
+            } else {
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    throw new Exception("Node is offline");
+                }
+                node.addTask(new RequestTask(null,
+                        RequestTypes.UPDATE_LABEL,
+                        label,
                         roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
             }
@@ -569,14 +611,35 @@ public class ChatPavilion implements ChatRoom {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
             }
+            // 检查是否有权限
+            String myUUID = Cr.getNodeInfo().getUUID();
             if (!isOwner) {
-                throw new AuthenticationException("Permission deny");
+                // 不是房主
+                MemberInfo myInfo = memberMap.get(myUUID);
+                if (myInfo == null || myInfo.getRole() != MemberRoles.ROLE_ADMIN) {
+                    // 也不是管理员
+                    throw new AuthenticationException("Permission deny");
+                }
             }
             if (title.length() > Constants.MAX_ROOM_TITLE_LENGTH) {
                 throw new Exception("Title out of range " + Constants.MAX_ROOM_TITLE_LENGTH);
             }
-            roomInfo.setTitle(title);
-            updateRoomInfo(roomInfo);
+            if (isOwner) {
+                roomInfo.setTitle(title)
+                        .setUpdateTime(System.currentTimeMillis());
+                updateRoomInfo(roomInfo);
+            } else {
+                // 不是群主，但是是管理员
+                Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
+                if (node == null || !node.isOnline()) {
+                    throw new Exception("Node is offline");
+                } else {
+                    node.addTask(new RequestTask(null, RequestTypes.UPDATE_ROOM_TITLE,
+                            title,
+                            roomInfo.getNodeUUID(),
+                            roomInfo.getRoomUUID()));
+                }
+            }
         }
     }
 
@@ -714,6 +777,74 @@ public class ChatPavilion implements ChatRoom {
         } catch (Exception e) {
             Logger.warn(e);
             callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));
+        }
+    }
+
+    /**
+     * 授权管理员权限
+     *
+     * @param userUUID 成员标识码
+     */
+    @Override
+    public void grantAdminPermission(String userUUID) throws Exception {
+        Objects.requireNonNull(userUUID);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            if (!isOwner) {
+                throw new AuthenticationException("Permission deny");
+            }
+            MemberInfo memberInfo = getMemberInfo(userUUID);
+            if (memberInfo == null) {
+                throw new Exception("Member not found");
+            }
+            if (memberInfo.getRole() == MemberRoles.ROLE_ADMIN
+                    || memberInfo.getRole() == MemberRoles.ROLE_OWNER) {
+                return;
+            }
+            memberInfo.setRole(MemberRoles.ROLE_ADMIN)
+                    .setUpdateTime(System.currentTimeMillis());
+            DaoManager.getMemberDao().updateMember(memberInfo);
+            synchronized (onlineNodeMap) {
+                for (Node node : onlineNodeMap.values()) {
+                    node.addTask(new PushTask(memberInfo, null));
+                }
+            }
+        }
+    }
+
+    /**
+     * 撤销管理员权限
+     *
+     * @param userUUID 成员标识码
+     */
+    @Override
+    public void revokeAdminPermission(String userUUID) throws Exception {
+        Objects.requireNonNull(userUUID);
+        synchronized (availLock) {
+            if (!isAvailable) {
+                throw new Exception("Room is not available");
+            }
+            if (!isOwner) {
+                throw new AuthenticationException("Permission deny");
+            }
+            MemberInfo memberInfo = getMemberInfo(userUUID);
+            if (memberInfo == null) {
+                throw new Exception("Member not found");
+            }
+            if (memberInfo.getRole() == MemberRoles.ROLE_NORMAL
+                    || memberInfo.getRole() == MemberRoles.ROLE_OWNER) {
+                return;
+            }
+            memberInfo.setRole(MemberRoles.ROLE_NORMAL)
+                    .setUpdateTime(System.currentTimeMillis());
+            DaoManager.getMemberDao().updateMember(memberInfo);
+            synchronized (onlineNodeMap) {
+                for (Node node : onlineNodeMap.values()) {
+                    node.addTask(new PushTask(memberInfo, null));
+                }
+            }
         }
     }
 

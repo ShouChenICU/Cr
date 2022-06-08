@@ -216,7 +216,7 @@ public final class ChatRoomManager {
                                                 Constants.MSG_LIST_BUF_SIZE
                                         )
                         );
-                        chatRoom.setMaxMsgID(DaoManager.getMessageDao().getMaxID());
+                        chatRoom.setMaxMsgID(DaoManager.getMessageDao().getMaxID(roomInfo.getNodeUUID(), roomInfo.getRoomUUID()));
                         CHAT_ROOM_LIST.add(chatRoom);
                         if (Objects.equals(uuid, roomInfo.getNodeUUID())) {
                             MANAGE_ROOM_MAP.put(roomInfo.getRoomUUID(), chatRoom);

@@ -29,8 +29,12 @@ public class RequestTask extends AbstractTask {
                 break;
             case RequestTypes.DEL_MEMBER:
                 // nodeUUID, roomUUID, memberUUID
+            case RequestTypes.UPDATE_ROOM_TITLE:
+                // title, nodeUUID, roomUUID
             case RequestTypes.UPDATE_NICKNAME:
                 // nickname, nodeUUID, roomUUID
+            case RequestTypes.UPDATE_LABEL:
+                // label, nodeUUID, roomUUID
                 if (args.length != 3
                         || args[0].getClass() != String.class
                         || args[1].getClass() != String.class
@@ -73,7 +77,9 @@ public class RequestTask extends AbstractTask {
                         .serialize());
                 break;
             case RequestTypes.DEL_MEMBER:
+            case RequestTypes.UPDATE_ROOM_TITLE:
             case RequestTypes.UPDATE_NICKNAME:
+            case RequestTypes.UPDATE_LABEL:
                 sendData(TaskTypes.REQUEST, new BsonObject()
                         .set("REQ_TYPE", requestType)
                         .set("0", requestArgs[0])

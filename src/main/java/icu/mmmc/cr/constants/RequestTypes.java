@@ -15,11 +15,19 @@ public class RequestTypes {
      */
     public static final int DEL_MEMBER = 2;
     /**
+     * 更新房间名
+     */
+    public static final int UPDATE_ROOM_TITLE = 3;
+    /**
      * 更新昵称
      */
-    public static final int UPDATE_NICKNAME = 3;
+    public static final int UPDATE_NICKNAME = 4;
+    /**
+     * 更新头衔
+     */
+    public static final int UPDATE_LABEL = 5;
     /**
      * 发送文本消息
      */
-    public static final int SEND_TEXT_MSG = 4;
+    public static final int SEND_TEXT_MSG = 6;
 }
