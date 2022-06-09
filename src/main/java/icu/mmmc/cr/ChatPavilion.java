@@ -173,10 +173,6 @@ public class ChatPavilion implements ChatRoom {
     @Override
     public void addMember(String UUID) throws Exception {
         Objects.requireNonNull(UUID);
-        MemberInfo memberInfo = new MemberInfo()
-                .setNodeUUID(roomInfo.getNodeUUID())
-                .setRoomUUID(roomInfo.getRoomUUID())
-                .setUserUUID(UUID);
         synchronized (availLock) {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
@@ -198,18 +194,21 @@ public class ChatPavilion implements ChatRoom {
                     throw new Exception("Member already exists");
                 }
             }
-            NodeInfo nodeInfo = DaoManager.getNodeInfoDao().getByUUID(UUID);
-            if (nodeInfo == null || nodeInfo.getAttr(NodeAttributes.$TITLE) == null) {
-                memberInfo.setNickname(UUID.substring(0, 8));
-            } else {
-                memberInfo.setNickname(nodeInfo.getAttr(NodeAttributes.$TITLE));
-            }
-            long joinTime = System.currentTimeMillis();
-            memberInfo.setUpdateTime(joinTime)
-                    .setJoinTime(joinTime);
-            // 推送新成员
+            // 是房主
             if (isOwner) {
-                // 是房主
+                MemberInfo memberInfo = new MemberInfo()
+                        .setNodeUUID(roomInfo.getNodeUUID())
+                        .setRoomUUID(roomInfo.getRoomUUID())
+                        .setUserUUID(UUID);
+                NodeInfo nodeInfo = DaoManager.getNodeInfoDao().getByUUID(UUID);
+                if (nodeInfo == null || nodeInfo.getAttr(NodeAttributes.$TITLE) == null) {
+                    memberInfo.setNickname(UUID.substring(0, 8));
+                } else {
+                    memberInfo.setNickname(nodeInfo.getAttr(NodeAttributes.$TITLE));
+                }
+                long joinTime = System.currentTimeMillis();
+                memberInfo.setUpdateTime(joinTime)
+                        .setJoinTime(joinTime);
                 synchronized (memberMap) {
                     memberMap.put(UUID, memberInfo);
                     DaoManager.getMemberDao().updateMember(memberInfo);
@@ -221,6 +220,7 @@ public class ChatPavilion implements ChatRoom {
                 }
                 Node node = NodeManager.getByUUID(UUID);
                 if (node != null && node.isOnline()) {
+                    putNode(UUID, node);
                     node.addTask(new PushTask(roomInfo, null));
                 }
             } else {
@@ -229,7 +229,7 @@ public class ChatPavilion implements ChatRoom {
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Room is offline");
                 }
-                node.addTask(new RequestTask(null, RequestTypes.ADD_MEMBER, memberInfo));
+                node.addTask(new RequestTask(null, RequestTypes.ADD_MEMBER, roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), UUID));
             }
         }
     }
@@ -387,7 +387,6 @@ public class ChatPavilion implements ChatRoom {
             if (!isAvailable) {
                 throw new Exception("Room is not available");
             }
-            messageInfo.check();
             if (!Objects.equals(messageInfo.getNodeUUID(), roomInfo.getNodeUUID())
                     || !Objects.equals(messageInfo.getRoomUUID(), roomInfo.getRoomUUID())
                     || !memberMap.containsKey(messageInfo.getSenderUUID())) {
@@ -401,12 +400,12 @@ public class ChatPavilion implements ChatRoom {
             synchronized (messageList) {
                 if (messageIdSet.add(messageInfo.getId())) {
                     messageList.add(messageInfo);
+                    DaoManager.getMessageDao().putMessage(messageInfo);
                     unreadCount++;
                     messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
                     if (messageList.size() > Constants.MSG_LIST_BUF_SIZE) {
                         messageIdSet.remove(messageList.remove(0).getId());
                     }
-                    DaoManager.getMessageDao().putMessage(messageInfo);
                     if (msgReceiveCallback != null) {
                         msgReceiveCallback.receiveMsg(messageInfo);
                     }
@@ -427,13 +426,13 @@ public class ChatPavilion implements ChatRoom {
             }
             messageInfo.check();
             if (!Objects.equals(messageInfo.getNodeUUID(), roomInfo.getNodeUUID())
-                    || !Objects.equals(messageInfo.getRoomUUID(), roomInfo.getRoomUUID())
-                    || !memberMap.containsKey(messageInfo.getSenderUUID())) {
+                    || !Objects.equals(messageInfo.getRoomUUID(), roomInfo.getRoomUUID())) {
                 throw new Exception("Message is illegal");
             }
             synchronized (messageList) {
                 if (messageIdSet.add(messageInfo.getId())) {
                     messageList.add(messageInfo);
+                    unreadCount++;
                     messageList.sort(Comparator.comparingLong(MessageInfo::getTimestamp));
                     if (messageList.size() > Constants.MSG_LIST_BUF_SIZE) {
                         messageIdSet.remove(messageList.remove(0).getId());
@@ -758,17 +757,19 @@ public class ChatPavilion implements ChatRoom {
                         throw new Exception("Room is offline");
                     }
                     ProgressCallback finalCallback = callback;
-                    node.addTask(new RequestTask(new ProgressAdapter() {
-                        @Override
-                        public void done() {
-                            finalCallback.done();
-                        }
+                    node.addTask(new RequestTask(
+                            new ProgressAdapter() {
+                                @Override
+                                public void done() {
+                                    finalCallback.done();
+                                }
 
-                        @Override
-                        public void halt(String msg) {
-                            finalCallback.halt(msg);
-                        }
-                    }, RequestTypes.SEND_TEXT_MSG,
+                                @Override
+                                public void halt(String msg) {
+                                    finalCallback.halt(msg);
+                                }
+                            },
+                            RequestTypes.SEND_TEXT_MSG,
                             roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID(),
                             msg));
@@ -851,10 +852,11 @@ public class ChatPavilion implements ChatRoom {
     /**
      * 同步指定时间之前的消息列表
      *
-     * @param timeStamp 时间戳
+     * @param earliestTime 时间
+     * @param callback     回调
      */
     @Override
-    public void syncMessagesBeforeTime(long timeStamp, ProgressCallback callback) {
+    public void syncMessagesBeforeTime(long earliestTime, ProgressCallback callback) {
         if (callback == null) {
             callback = new ProgressAdapter();
         }
@@ -867,7 +869,7 @@ public class ChatPavilion implements ChatRoom {
                     return;
                 }
                 ProgressCallback finalCallback = callback;
-                SyncMessageTask1 syncMessageTask1 = new SyncMessageTask1(this, timeStamp, new ProgressCallback() {
+                SyncMessageTask1 syncMessageTask1 = new SyncMessageTask1(this, earliestTime, new ProgressCallback() {
                     @Override
                     public void start() {
                         finalCallback.start();

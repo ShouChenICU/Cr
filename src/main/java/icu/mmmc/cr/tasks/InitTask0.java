@@ -48,7 +48,7 @@ public class InitTask0 extends AbstractTask {
             stepCount = 1;
             BSONObject object = BsonUtils.deserialize(data);
             // 验证协议版本
-            if (!Objects.equals(object.get("PROTOCOL"), Version.PATCH_VERSION)) {
+            if (!Objects.equals(object.get("PROTOCOL"), Version.PROTOCOL_VERSION)) {
                 String s = "protocol version error";
                 sendError(s);
                 halt(s);

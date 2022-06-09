@@ -4,6 +4,7 @@ import icu.mmmc.cr.ChatPavilion;
 import icu.mmmc.cr.ChatRoomManager;
 import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.callbacks.ChatRoomUpdateCallback;
+import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.constants.MemberRoles;
 import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -39,9 +40,11 @@ public class ResponseTask extends AbstractTask {
             int requestType = (int) object.get("REQ_TYPE");
             switch (requestType) {
                 case RequestTypes.ADD_MEMBER:
-                    MemberInfo memberInfo = new MemberInfo((byte[]) object.get("0"));
-                    memberInfo.check();
-                    ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(memberInfo.getNodeUUID(), memberInfo.getRoomUUID());
+                    String nodeUUID = (String) object.get("0");
+                    String roomUUID = (String) object.get("1");
+                    String userUUID = (String) object.get("2");
+
+                    ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
                     if (pavilion == null) {
                         throw new Exception("Room not found");
                     }
@@ -50,12 +53,12 @@ public class ResponseTask extends AbstractTask {
                             && info.getRole() != MemberRoles.ROLE_ADMIN) {
                         throw new AuthenticationException("Permission deny");
                     }
-                    pavilion.updateMemberInfo(memberInfo);
+                    pavilion.addMember(userUUID);
                     break;
                 case RequestTypes.DEL_MEMBER:
-                    String nodeUUID = (String) object.get("0");
-                    String roomUUID = (String) object.get("1");
-                    String userUUID = (String) object.get("2");
+                    nodeUUID = (String) object.get("0");
+                    roomUUID = (String) object.get("1");
+                    userUUID = (String) object.get("2");
                     pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
                     if (pavilion == null) {
                         throw new Exception("Room not found");
@@ -92,7 +95,7 @@ public class ResponseTask extends AbstractTask {
                     if (pavilion == null) {
                         throw new Exception("Room not found");
                     }
-                    memberInfo = pavilion.getMemberInfo(userUUID);
+                    MemberInfo memberInfo = pavilion.getMemberInfo(userUUID);
                     if (memberInfo == null) {
                         throw new Exception("Member not found");
                     }
@@ -124,6 +127,10 @@ public class ResponseTask extends AbstractTask {
                         throw new Exception("Room not found");
                     }
                     pavilion.receiveMessage(messageInfo);
+                    MsgReceiveCallback callback1 = Cr.CallBack.msgReceiveCallback;
+                    if (callback1 != null) {
+                        callback1.receiveMsg(messageInfo);
+                    }
                     break;
             }
         } catch (Exception e) {

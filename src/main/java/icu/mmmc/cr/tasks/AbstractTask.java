@@ -62,6 +62,7 @@ public abstract class AbstractTask implements Task {
         this.callback = Objects.requireNonNullElse(callback, new ProgressAdapter());
         this.destinationId = 0;
         this.startTime = System.currentTimeMillis();
+        this.updateTime = startTime;
     }
 
     /**

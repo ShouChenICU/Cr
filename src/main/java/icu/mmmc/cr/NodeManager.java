@@ -131,7 +131,6 @@ public final class NodeManager {
                             if (callback1 != null) {
                                 callback1.connected(nodeInfo);
                             }
-                            checkTaskTimeOut();
                             // 连接成功后开始同步房间
                             addTask(new SyncRoomTask1(null));
                         }
@@ -179,12 +178,7 @@ public final class NodeManager {
         synchronized (CONNECTING_NODE_LIST) {
             CONNECTING_NODE_LIST.add(node);
         }
-        TIMER_EXECUTOR.schedule(() -> {
-            if (!node.isOnline()) {
-                Logger.debug("Node init time out");
-                node.initFail();
-            }
-        }, CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
+        node.checkTaskTimeOut();
         key.attach(node);
         key.interestOps(SelectionKey.OP_READ);
         key.selector().wakeup();

@@ -2,7 +2,9 @@ package icu.mmmc.cr.tasks;
 
 import icu.mmmc.cr.ChatPavilion;
 import icu.mmmc.cr.ChatRoom;
+import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.Node;
+import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.Constants;
 import icu.mmmc.cr.constants.TaskTypes;
@@ -62,7 +64,13 @@ public class SyncMessageTask1 extends AbstractTask {
         } else {
             BasicBSONObject object = (BasicBSONObject) BsonUtils.deserialize(data);
             for (Object dat : object.values()) {
-                chatPavilion.receiveMessage(new MessageInfo((byte[]) dat));
+                MessageInfo messageInfo = new MessageInfo((byte[]) dat);
+                chatPavilion.putMessage(messageInfo);
+                DaoManager.getMessageDao().putMessage(messageInfo);
+                MsgReceiveCallback callback = Cr.CallBack.msgReceiveCallback;
+                if (callback != null) {
+                    callback.receiveMsg(messageInfo);
+                }
             }
             done();
         }

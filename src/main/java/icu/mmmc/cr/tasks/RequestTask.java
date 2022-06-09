@@ -4,7 +4,6 @@ import icu.mmmc.cr.Node;
 import icu.mmmc.cr.callbacks.ProgressCallback;
 import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
-import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.utils.BsonObject;
 
@@ -21,12 +20,7 @@ public class RequestTask extends AbstractTask {
         super(callback);
         switch (requestType) {
             case RequestTypes.ADD_MEMBER:
-                // member info
-                if (args.length != 1
-                        || args[0].getClass() != MemberInfo.class) {
-                    throw new Exception("Argument error");
-                }
-                break;
+                // nodeUUID, roomUUID, member info
             case RequestTypes.DEL_MEMBER:
                 // nodeUUID, roomUUID, memberUUID
             case RequestTypes.UPDATE_ROOM_TITLE:
@@ -71,11 +65,6 @@ public class RequestTask extends AbstractTask {
         super.init(node, taskId);
         switch (requestType) {
             case RequestTypes.ADD_MEMBER:
-                sendData(TaskTypes.REQUEST, new BsonObject()
-                        .set("REQ_TYPE", requestType)
-                        .set("0", ((MemberInfo) requestArgs[0]).serialize())
-                        .serialize());
-                break;
             case RequestTypes.DEL_MEMBER:
             case RequestTypes.UPDATE_ROOM_TITLE:
             case RequestTypes.UPDATE_NICKNAME:

@@ -140,10 +140,10 @@ public interface ChatRoom {
     /**
      * 同步指定时间之前的消息列表
      *
-     * @param timeStamp 时间戳
-     * @param callback  进度回调
+     * @param earliestTime 时间
+     * @param callback     进度回调
      */
-    void syncMessagesBeforeTime(long timeStamp, ProgressCallback callback);
+    void syncMessagesBeforeTime(long earliestTime, ProgressCallback callback);
 
     /**
      * 同步成员列表

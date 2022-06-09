@@ -6,6 +6,7 @@ import icu.mmmc.cr.Cr;
 import icu.mmmc.cr.NodeManager;
 import icu.mmmc.cr.callbacks.MsgReceiveCallback;
 import icu.mmmc.cr.constants.TaskTypes;
+import icu.mmmc.cr.database.DaoManager;
 import icu.mmmc.cr.entities.MemberInfo;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.entities.NodeInfo;
@@ -142,5 +143,6 @@ public class ReceiveTask extends TransmitTask {
             callback.receiveMsg(messageInfo);
         }
         chatPavilion.putMessage(messageInfo);
+        DaoManager.getMessageDao().putMessage(messageInfo);
     }
 }
