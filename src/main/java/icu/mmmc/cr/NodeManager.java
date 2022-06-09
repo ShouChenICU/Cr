@@ -12,6 +12,7 @@ import icu.mmmc.cr.tasks.SyncRoomTask1;
 import icu.mmmc.cr.utils.Logger;
 
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -75,7 +76,13 @@ public final class NodeManager {
             Logger.debug(msg);
             callback.start();
             channel = SocketChannel.open();
-            channel.socket().connect(address, 666);
+            try {
+                channel.socket().connect(address, 666);
+            } catch (SocketTimeoutException e) {
+                Logger.warn(e);
+                callback.halt("Time out");
+                return;
+            }
             msg = "Connecting to " + channel.getRemoteAddress();
             Logger.info(msg);
             callback.update(0, msg);

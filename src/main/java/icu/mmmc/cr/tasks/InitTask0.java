@@ -66,7 +66,7 @@ public class InitTask0 extends AbstractTask {
                 if (nodeInfo == null) {
                     // 找不到该节点
                     if (newConnectionCallback == null) {
-                        halt("连接被拒绝");
+                        halt("Connection refused");
                     } else {
                         // 询问用户是否允许连接
                         if (newConnectionCallback.newConnection(uuid, uuid, true)) {
@@ -75,13 +75,13 @@ public class InitTask0 extends AbstractTask {
                                     .setUUID(uuid)
                                     .setPublicKey(publicKey);
                         } else {
-                            halt("连接被拒绝");
+                            halt("Connection refused");
                         }
                     }
                 } else {
                     if (newConnectionCallback != null) {
                         if (!newConnectionCallback.newConnection(uuid, nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
-                            halt("连接被拒绝");
+                            halt("Connection refused");
                         }
                     }
                 }
@@ -112,7 +112,7 @@ public class InitTask0 extends AbstractTask {
                 // 验证通过，发送自己的节点信息
                 sendData(TaskTypes.ACK, Cr.getNodeInfo().serialize());
             } else {
-                String s = "身份验证失败";
+                String s = "Authentication failed";
                 sendError(s);
                 halt(s);
             }
@@ -127,6 +127,7 @@ public class InitTask0 extends AbstractTask {
     @Override
     public void halt(String msg) {
         super.halt(msg);
+        Logger.warn(msg);
         try {
             node.initFail();
         } catch (Exception e) {

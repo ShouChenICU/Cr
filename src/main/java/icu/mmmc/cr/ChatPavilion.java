@@ -283,6 +283,7 @@ public class ChatPavilion implements ChatRoom {
                                 memberInfo.getRoomUUID(),
                                 UUID));
                     }
+                    onlineNodeMap.remove(UUID);
                 }
             } else {
                 // 不是群主，但是是管理员

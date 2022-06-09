@@ -54,7 +54,7 @@ public class InitTask1 extends AbstractTask {
             // 解析uuid
             String uuid = UUID.nameUUIDFromBytes(data).toString();
             if (expectUUID != null && !Objects.equals(expectUUID, uuid)) {
-                halt("预期UUID:" + expectUUID + " 连接UUID:" + uuid);
+                halt("预期UUID:" + expectUUID + "\n连接UUID:" + uuid);
                 return;
             }
             // 尝试从数据库获取节点信息
@@ -63,7 +63,7 @@ public class InitTask1 extends AbstractTask {
             if (nodeInfo == null) {
                 // 找不到该节点
                 if (newConnectionCallback == null) {
-                    halt("连接被拒绝");
+                    halt("Connection refused");
                     return;
                 } else {
                     // 询问用户是否允许连接
@@ -73,14 +73,14 @@ public class InitTask1 extends AbstractTask {
                                 .setUUID(uuid)
                                 .setPublicKey(publicKey);
                     } else {
-                        halt("连接被拒绝");
+                        halt("Connection refused");
                         return;
                     }
                 }
             } else {
                 if (newConnectionCallback != null) {
                     if (!newConnectionCallback.newConnection(uuid, nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
-                        halt("连接被拒绝");
+                        halt("Connection refused");
                         return;
                     }
                 }
@@ -103,7 +103,7 @@ public class InitTask1 extends AbstractTask {
                 node.getEncryptor().updateKey(key);
             } catch (Exception e) {
                 Logger.warn(e);
-                halt("");
+                halt(e.toString());
             }
         } else if (stepCount == 1) {
             stepCount = 2;

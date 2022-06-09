@@ -40,7 +40,15 @@ public class SyncMessageTask0 extends AbstractTask {
             String roomUUID = (String) object.get("ROOM_UUID");
             ChatRoom chatRoom = ChatRoomManager.getByRoomUUID(roomUUID);
             if (chatRoom == null) {
+                // 如果找不到房间
                 String err = "Room not found";
+                sendError(err);
+                halt(err);
+                return;
+            }
+            if (!chatRoom.containMember(node.getNodeInfo().getUUID())) {
+                // 如果成员不在该房间
+                String err = "Member not found";
                 sendError(err);
                 halt(err);
                 return;

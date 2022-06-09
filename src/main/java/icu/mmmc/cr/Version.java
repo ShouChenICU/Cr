@@ -18,7 +18,7 @@ public final class Version {
     /**
      * 修订号
      */
-    public static final Integer PATCH_VERSION = 72;
+    public static final Integer PATCH_VERSION = 73;
     /**
      * 通讯协议版本
      */
