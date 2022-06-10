@@ -69,7 +69,7 @@ public class SyncMessageTask1 extends AbstractTask {
                 DaoManager.getMessageDao().putMessage(messageInfo);
                 MsgReceiveCallback callback = Cr.CallBack.msgReceiveCallback;
                 if (callback != null) {
-                    callback.receiveMsg(messageInfo);
+                    callback.receiveMsg(chatPavilion, messageInfo);
                 }
             }
             done();

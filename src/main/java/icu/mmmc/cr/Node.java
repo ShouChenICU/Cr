@@ -249,7 +249,7 @@ public abstract class Node extends NetNode {
      */
     @Override
     protected void exceptionHandler(Exception e) {
-        Logger.error(e);
+        Logger.debug(e);
         try {
             disconnect();
         } catch (Exception ex) {

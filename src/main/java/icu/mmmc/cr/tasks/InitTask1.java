@@ -54,7 +54,7 @@ public class InitTask1 extends AbstractTask {
             // 解析uuid
             String uuid = UUID.nameUUIDFromBytes(data).toString();
             if (expectUUID != null && !Objects.equals(expectUUID, uuid)) {
-                halt("预期UUID:" + expectUUID + "\n连接UUID:" + uuid);
+                halt("预期UUID:" + expectUUID + " 不匹配");
                 return;
             }
             // 尝试从数据库获取节点信息

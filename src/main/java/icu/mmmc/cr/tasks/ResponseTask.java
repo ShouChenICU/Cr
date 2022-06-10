@@ -129,7 +129,7 @@ public class ResponseTask extends AbstractTask {
                     pavilion.receiveMessage(messageInfo);
                     MsgReceiveCallback callback1 = Cr.CallBack.msgReceiveCallback;
                     if (callback1 != null) {
-                        callback1.receiveMsg(messageInfo);
+                        callback1.receiveMsg(pavilion, messageInfo);
                     }
                     break;
             }

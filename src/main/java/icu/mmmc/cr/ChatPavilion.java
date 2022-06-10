@@ -408,7 +408,7 @@ public class ChatPavilion implements ChatRoom {
                         messageIdSet.remove(messageList.remove(0).getId());
                     }
                     if (msgReceiveCallback != null) {
-                        msgReceiveCallback.receiveMsg(messageInfo);
+                        msgReceiveCallback.receiveMsg(this, messageInfo);
                     }
                 }
             }
@@ -439,7 +439,7 @@ public class ChatPavilion implements ChatRoom {
                         messageIdSet.remove(messageList.remove(0).getId());
                     }
                     if (msgReceiveCallback != null) {
-                        msgReceiveCallback.receiveMsg(messageInfo);
+                        msgReceiveCallback.receiveMsg(this, messageInfo);
                     }
                 }
             }
@@ -466,7 +466,7 @@ public class ChatPavilion implements ChatRoom {
                     messageIdSet.remove(messageList.remove(0).getId());
                 }
                 if (msgReceiveCallback != null) {
-                    msgReceiveCallback.receiveMsg(messageList.get(messageList.size() - 1));
+                    msgReceiveCallback.receiveMsg(this, messageList.get(messageList.size() - 1));
                 }
             }
         }

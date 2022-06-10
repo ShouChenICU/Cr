@@ -123,6 +123,9 @@ public final class NodeManager {
                     String uuid = nodeInfo.getUUID();
                     synchronized (NODE_MAP) {
                         if (NODE_MAP.containsKey(uuid) || Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
+                            Node node1=NODE_MAP.get(uuid);
+                            node1.postPacket(new PacketBody().setTaskType(TaskTypes.PING));
+                            // TODO: 2022/6/10  
                             String s = "Connect repeatedly " + uuid;
                             finalCallback.halt(s);
                             Logger.warn(s);
