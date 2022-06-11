@@ -20,6 +20,7 @@ public interface NodeStatusUpdateCallback {
      * 节点断开连接
      *
      * @param nodeInfo 节点信息
+     * @param reason   原因
      */
-    void disconnected(NodeInfo nodeInfo);
+    void disconnected(NodeInfo nodeInfo, String reason);
 }

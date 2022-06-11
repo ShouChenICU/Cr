@@ -147,7 +147,7 @@ public class Cr {
                 Node node = NodeManager.getByUUID(uuid);
                 if (node != null) {
                     try {
-                        node.disconnect();
+                        node.disconnect("Normal");
                         callback.done();
                     } catch (Exception e) {
                         Logger.warn(e);

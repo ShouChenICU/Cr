@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,20 +31,20 @@ import java.util.concurrent.TimeUnit;
  */
 public final class NodeManager {
     /**
-     * 连接超时时长 29s
+     * 连接超时时长 600s
      * 超过此时间即认为连接断开
      */
-    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(29);
+    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(600);
     /**
-     * 心跳检测周期 17s
-     * 每17s检测一次
+     * 心跳检测周期 240s
+     * 每240s检测一次
      */
-    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(17);
+    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(240);
     /**
-     * 心跳时间 7s
+     * 心跳时间 300s
      * 超过这个时间无心跳则测试一次连接
      */
-    private static final long HEART_BEAT_TIME = TimeUnit.SECONDS.toMillis(7);
+    private static final long HEART_BEAT_TIME = TimeUnit.SECONDS.toMillis(300);
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;
@@ -122,28 +123,31 @@ public final class NodeManager {
                 try {
                     String uuid = nodeInfo.getUUID();
                     synchronized (NODE_MAP) {
-                        if (NODE_MAP.containsKey(uuid) || Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
-                            Node node1=NODE_MAP.get(uuid);
-                            node1.postPacket(new PacketBody().setTaskType(TaskTypes.PING));
-                            // TODO: 2022/6/10  
-                            String s = "Connect repeatedly " + uuid;
-                            finalCallback.halt(s);
-                            Logger.warn(s);
-                            super.disconnect();
-                        } else {
-                            updateNodeInfo(nodeInfo);
-                            NODE_MAP.put(uuid, this);
-                            ChatRoomManager.registerNode(this);
-                            heartTest(this);
-                            Logger.info("Connected to " + uuid);
-                            finalCallback.done();
-                            NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
-                            if (callback1 != null) {
-                                callback1.connected(nodeInfo);
-                            }
-                            // 连接成功后开始同步房间
-                            addTask(new SyncRoomTask1(null));
+                        if (Objects.equals(Cr.getNodeInfo().getUUID(), uuid)) {
+                            disconnect("Can not connect to self");
+                            return;
                         }
+                        Node node1 = NODE_MAP.get(uuid);
+                        if (node1 != null) {
+                            String s = "Connect repeatedly " + uuid;
+                            node1.postPacketBlocked(new PacketBody()
+                                    .setTaskType(TaskTypes.DISCONNECT)
+                                    .setPayload(s.getBytes(StandardCharsets.UTF_8)));
+                            node1.disconnect(s);
+                            return;
+                        }
+                        updateNodeInfo(nodeInfo);
+                        NODE_MAP.put(uuid, this);
+                        ChatRoomManager.registerNode(this);
+                        heartTest(this);
+                        Logger.info("Connected to " + uuid);
+                        finalCallback.done();
+                        NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
+                        if (callback1 != null) {
+                            callback1.connected(nodeInfo);
+                        }
+                        // 连接成功后开始同步房间
+                        addTask(new SyncRoomTask1(null));
                     }
                 } catch (Exception e) {
                     Logger.warn(e);
@@ -156,17 +160,17 @@ public final class NodeManager {
                     CONNECTING_NODE_LIST.remove(this);
                 }
                 try {
-                    super.disconnect();
+                    super.disconnect("Init fail");
                 } catch (Exception e) {
                     Logger.warn(e);
                 }
             }
 
             @Override
-            public void disconnect() {
+            public void disconnect(String reason) {
                 String uuid = nodeInfo == null ? null : nodeInfo.getUUID();
                 try {
-                    super.disconnect();
+                    super.disconnect(reason);
                 } catch (Exception e) {
                     Logger.error(e);
                 }
@@ -176,7 +180,7 @@ public final class NodeManager {
                             Logger.debug("Remove " + nodeInfo.getUUID());
                             NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
                             if (callback1 != null) {
-                                callback1.disconnected(nodeInfo);
+                                callback1.disconnected(nodeInfo, reason);
                             }
                         }
                     }
@@ -237,7 +241,7 @@ public final class NodeManager {
         synchronized (CONNECTING_NODE_LIST) {
             for (Node node : CONNECTING_NODE_LIST) {
                 try {
-                    node.disconnect();
+                    node.disconnect("Server stop");
                 } catch (Exception e) {
                     Logger.warn(e);
                 }
@@ -246,7 +250,7 @@ public final class NodeManager {
         }
         for (Node node : NODE_MAP.values()) {
             try {
-                node.disconnect();
+                node.disconnect("Server stop");
             } catch (Exception e) {
                 Logger.warn(e);
             }
@@ -265,12 +269,12 @@ public final class NodeManager {
         long interval = System.currentTimeMillis() - node.getHeartBeat();
         if (interval > CONNECT_TIMEOUT) {
             try {
-                node.disconnect();
+                node.disconnect("Heart stop");
             } catch (Exception e) {
                 Logger.warn(e);
             }
         } else if (interval > HEART_BEAT_TIME) {
-            node.postPacket(new PacketBody()
+            node.postPacketBlocked(new PacketBody()
                     .setDestination(0)
                     .setTaskType(TaskTypes.PING));
         }

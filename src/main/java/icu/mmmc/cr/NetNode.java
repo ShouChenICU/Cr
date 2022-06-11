@@ -81,8 +81,10 @@ abstract class NetNode {
 
     /**
      * 断开连接
+     *
+     * @param reason 原因
      */
-    public void disconnect() throws Exception {
+    public void disconnect(String reason) throws Exception {
         if (key != null) {
             key.cancel();
             key.selector().wakeup();
@@ -114,7 +116,7 @@ abstract class NetNode {
                 }
                 if (len == -1) {
                     Logger.debug("Channel closed");
-                    disconnect();
+                    disconnect("Channel closed");
                     return;
                 }
                 readLength += len;

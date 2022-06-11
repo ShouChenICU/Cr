@@ -6,7 +6,9 @@ import icu.mmmc.cr.tasks.*;
 import icu.mmmc.cr.utils.Logger;
 
 import java.nio.channels.SelectionKey;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -137,6 +139,43 @@ public abstract class Node extends NetNode {
     }
 
     /**
+     * 阻塞式的发送包，等待发送成功后返回
+     *
+     * @param packetBody 数据包
+     */
+    public boolean postPacketBlocked(PacketBody packetBody) {
+        try {
+            if (!postLock.tryLock(5, TimeUnit.SECONDS)) {
+                return false;
+            }
+        } catch (InterruptedException e) {
+            Logger.warn(e);
+            return false;
+        }
+        try {
+            byte[] dat = encryptor.encrypt(packetBody.serialize());
+            doWrite(dat);
+            synchronized (waitSendPacketQueue) {
+                if (!postLock.isLocked() && isConnect() && waitSendPacketQueue.size() > 0) {
+                    key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                    key.selector().wakeup();
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            Logger.warn(e);
+            try {
+                disconnect(Objects.requireNonNullElse(e.getMessage(), e.toString()));
+            } catch (Exception ex) {
+                Logger.warn(ex);
+            }
+            return false;
+        } finally {
+            postLock.unlock();
+        }
+    }
+
+    /**
      * 发送包
      */
     protected void doPost() {
@@ -162,9 +201,10 @@ public abstract class Node extends NetNode {
                 byte[] dat = encryptor.encrypt(packetBody.serialize());
                 doWrite(dat);
             } catch (Exception e) {
+                postLock.unlock();
                 Logger.warn(e);
                 try {
-                    disconnect();
+                    disconnect(Objects.requireNonNullElse(e.getMessage(), e.toString()));
                 } catch (Exception ex) {
                     Logger.warn(ex);
                 }
@@ -196,8 +236,11 @@ public abstract class Node extends NetNode {
         Task task;
         if (packetBody.getDestination() == 0) {
             switch (packetBody.getTaskType()) {
+                case TaskTypes.DISCONNECT:
+                    disconnect(new String(packetBody.getPayload(), StandardCharsets.UTF_8));
+                    return;
                 case TaskTypes.PING:
-                    postPacket(packetBody.setTaskType(TaskTypes.PONG));
+                    postPacketBlocked(packetBody.setTaskType(TaskTypes.PONG));
                     return;
                 case TaskTypes.PONG:
                     return;
@@ -233,11 +276,11 @@ public abstract class Node extends NetNode {
     }
 
     @Override
-    public void disconnect() throws Exception {
-        super.disconnect();
+    public void disconnect(String reason) throws Exception {
+        super.disconnect(reason);
         synchronized (taskMap) {
             for (Task task : taskMap.values()) {
-                task.halt("Disconnect");
+                task.halt("Disconnect: " + reason);
             }
         }
     }
@@ -251,7 +294,7 @@ public abstract class Node extends NetNode {
     protected void exceptionHandler(Exception e) {
         Logger.debug(e);
         try {
-            disconnect();
+            disconnect(Objects.requireNonNullElse(e.getMessage(), e.toString()));
         } catch (Exception ex) {
             Logger.warn(ex);
         }

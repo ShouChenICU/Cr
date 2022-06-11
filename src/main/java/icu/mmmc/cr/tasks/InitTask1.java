@@ -90,15 +90,16 @@ public class InitTask1 extends AbstractTask {
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
                 // 生成AES密钥
                 SecretKey key = KeyUtils.genAESKey();
-                byte[] bytes = new PacketBody()
+                PacketBody packetBody = new PacketBody()
                         .setSource(taskId)
                         .setDestination(destinationId)
                         // 用RSA公钥加密
-                        .setPayload(cipher.doFinal(key.getEncoded()))
-                        .serialize();
-                bytes = node.getEncryptor().encrypt(bytes);
+                        .setPayload(cipher.doFinal(key.getEncoded()));
                 // 绕过队列直接写入
-                node.doWrite(bytes);
+                if (!node.postPacketBlocked(packetBody)) {
+                    halt("Post packet time out");
+                    return;
+                }
                 // 更新密钥
                 node.getEncryptor().updateKey(key);
             } catch (Exception e) {
