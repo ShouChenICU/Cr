@@ -8,6 +8,10 @@ package icu.mmmc.cr.constants;
 @SuppressWarnings("unused")
 public class TaskTypes {
     /**
+     * 断开连接
+     */
+    public static final int DISCONNECT = -2;
+    /**
      * 出错
      */
     public static final int ERROR = -1;

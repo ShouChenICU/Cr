@@ -54,7 +54,7 @@ public class InitTask1 extends AbstractTask {
             // 解析uuid
             String uuid = UUID.nameUUIDFromBytes(data).toString();
             if (expectUUID != null && !Objects.equals(expectUUID, uuid)) {
-                halt("预期UUID:" + expectUUID + " 连接UUID:" + uuid);
+                halt("预期UUID:" + expectUUID + " 不匹配");
                 return;
             }
             // 尝试从数据库获取节点信息
@@ -63,7 +63,7 @@ public class InitTask1 extends AbstractTask {
             if (nodeInfo == null) {
                 // 找不到该节点
                 if (newConnectionCallback == null) {
-                    halt("连接被拒绝");
+                    halt("Connection refused");
                     return;
                 } else {
                     // 询问用户是否允许连接
@@ -73,14 +73,14 @@ public class InitTask1 extends AbstractTask {
                                 .setUUID(uuid)
                                 .setPublicKey(publicKey);
                     } else {
-                        halt("连接被拒绝");
+                        halt("Connection refused");
                         return;
                     }
                 }
             } else {
                 if (newConnectionCallback != null) {
                     if (!newConnectionCallback.newConnection(uuid, nodeInfo.getAttr(NodeAttributes.$TITLE), false)) {
-                        halt("连接被拒绝");
+                        halt("Connection refused");
                         return;
                     }
                 }
@@ -90,20 +90,21 @@ public class InitTask1 extends AbstractTask {
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
                 // 生成AES密钥
                 SecretKey key = KeyUtils.genAESKey();
-                byte[] bytes = new PacketBody()
+                PacketBody packetBody = new PacketBody()
                         .setSource(taskId)
                         .setDestination(destinationId)
                         // 用RSA公钥加密
-                        .setPayload(cipher.doFinal(key.getEncoded()))
-                        .serialize();
-                bytes = node.getEncryptor().encrypt(bytes);
+                        .setPayload(cipher.doFinal(key.getEncoded()));
                 // 绕过队列直接写入
-                node.doWrite(bytes);
+                if (!node.postPacketBlocked(packetBody)) {
+                    halt("Post packet time out");
+                    return;
+                }
                 // 更新密钥
                 node.getEncryptor().updateKey(key);
             } catch (Exception e) {
                 Logger.warn(e);
-                halt("");
+                halt(e.toString());
             }
         } else if (stepCount == 1) {
             stepCount = 2;

@@ -140,7 +140,7 @@ public class ReceiveTask extends TransmitTask {
         }
         MsgReceiveCallback callback = Cr.CallBack.msgReceiveCallback;
         if (callback != null) {
-            callback.receiveMsg(messageInfo);
+            callback.receiveMsg(chatPavilion, messageInfo);
         }
         chatPavilion.putMessage(messageInfo);
         DaoManager.getMessageDao().putMessage(messageInfo);
