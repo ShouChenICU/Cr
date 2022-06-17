@@ -15,9 +15,10 @@ import java.util.concurrent.TimeoutException;
  */
 abstract class NetNode {
     private static final int TIME_OUT_LENGTH = 100;
-    private static final int TIME_OUT_COUNT = 10;
+    private static final int TIME_OUT_COUNT = 5;
     private static final int BUFFER_SIZE = 4096;
     protected final SelectionKey key;
+    private final Object keyLock;
     protected final long createTime;
     protected ByteBuffer readBuffer;
     protected ByteBuffer writeBuffer;
@@ -29,6 +30,7 @@ abstract class NetNode {
 
     public NetNode(SelectionKey key) {
         this.createTime = System.currentTimeMillis();
+        this.keyLock = new Object();
         this.writeLength = 0;
         this.readLength = 0;
         this.key = key;
@@ -41,23 +43,23 @@ abstract class NetNode {
      */
     @SuppressWarnings("BusyWait")
     public void doWrite(byte[] data) {
-        writeLength += data.length;
-        Logger.debug("Do write, data length = " + data.length);
+        int length = data.length;
+        writeLength += length;
+        Logger.debug("Do write, data length = " + length);
         try {
-            int length = data.length;
             if (length > 65535) {
-                throw new Exception("Data length too long");
+                throw new Exception("Data length too long " + length);
             }
             SocketChannel channel = (SocketChannel) key.channel();
-            synchronized (key) {
+            synchronized (keyLock) {
                 writeBuffer.clear();
                 writeBuffer.put((byte) (length % 256))
                         .put((byte) (length / 256));
                 int offset = 0;
-                while (offset < data.length) {
-                    length = Math.min(writeBuffer.remaining(), data.length - offset);
-                    writeBuffer.put(data, offset, length);
-                    offset += length;
+                while (offset < length) {
+                    int len = Math.min(writeBuffer.remaining(), length - offset);
+                    writeBuffer.put(data, offset, len);
+                    offset += len;
                     writeBuffer.flip();
                     int waitCount = 0;
                     while (writeBuffer.hasRemaining()) {
