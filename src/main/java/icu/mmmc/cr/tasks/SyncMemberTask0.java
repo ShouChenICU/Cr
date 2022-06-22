@@ -82,7 +82,7 @@ public class SyncMemberTask0 extends AbstractTask {
                 object.set(entry.getKey(), entry.getValue().serialize());
             }
             sendData(TaskTypes.ACK, object.serialize());
-            done();
+            done(null);
         }
     }
 }

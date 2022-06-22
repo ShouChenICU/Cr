@@ -21,8 +21,10 @@ public interface ProgressCallback {
 
     /**
      * 进度结束
+     *
+     * @param result 结果
      */
-    void done();
+    void done(Object result);
 
     /**
      * 进度终止

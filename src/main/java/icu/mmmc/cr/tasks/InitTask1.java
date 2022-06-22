@@ -125,7 +125,7 @@ public class InitTask1 extends AbstractTask {
             nodeInfo = new NodeInfo(data);
             // 发送自己的信息
             sendData(TaskTypes.ACK, Cr.getNodeInfo().serialize());
-            done();
+            done(null);
         } else {
             halt("");
         }
@@ -160,7 +160,7 @@ public class InitTask1 extends AbstractTask {
     }
 
     @Override
-    public void done() {
+    public void done(Object result) {
         node.removeTask(taskId);
         node.setNodeInfo(nodeInfo);
         node.initDone();

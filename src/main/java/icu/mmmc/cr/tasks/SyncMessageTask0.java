@@ -66,7 +66,7 @@ public class SyncMessageTask0 extends AbstractTask {
                 }
             }
             sendData(TaskTypes.ACK, obj.serialize());
-            done();
+            done(null);
         }
     }
 }

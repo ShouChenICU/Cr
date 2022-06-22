@@ -49,7 +49,7 @@ public class PushTask extends TransmitTask {
     @Override
     protected void handleData(byte[] data) {
         sendData(TaskTypes.ACK, entityData);
-        done();
+        done(null);
     }
 
     @Override

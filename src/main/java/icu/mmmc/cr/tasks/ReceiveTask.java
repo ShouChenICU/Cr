@@ -83,7 +83,7 @@ public class ReceiveTask extends TransmitTask {
                     receiveMessageInfo();
                     break;
             }
-            done();
+            done(null);
         } catch (Exception e) {
             Logger.warn(e);
             halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));

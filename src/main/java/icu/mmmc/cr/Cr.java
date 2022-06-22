@@ -148,7 +148,7 @@ public class Cr {
                 if (node != null) {
                     try {
                         node.disconnect("Normal");
-                        callback.done();
+                        callback.done(null);
                     } catch (Exception e) {
                         Logger.warn(e);
                         callback.halt(Objects.requireNonNullElse(e.getMessage(), e.toString()));

@@ -36,7 +36,7 @@ public class SyncRoomTask0 extends AbstractTask {
         }
         object.set("ROOM_LIST", list);
         sendData(TaskTypes.ACK, object.serialize());
-        done();
+        done(null);
     }
 
     @Override

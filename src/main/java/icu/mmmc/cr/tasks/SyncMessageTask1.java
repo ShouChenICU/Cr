@@ -72,7 +72,7 @@ public class SyncMessageTask1 extends AbstractTask {
                     callback.receiveMsg(chatPavilion, messageInfo);
                 }
             }
-            done();
+            done(null);
         }
     }
 

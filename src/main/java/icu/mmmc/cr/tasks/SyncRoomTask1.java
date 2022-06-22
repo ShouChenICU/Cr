@@ -41,7 +41,7 @@ public class SyncRoomTask1 extends AbstractTask {
                 return;
             }
         }
-        done();
+        done(null);
     }
 
     /**

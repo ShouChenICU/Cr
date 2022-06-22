@@ -118,7 +118,7 @@ public class InitTask0 extends AbstractTask {
             }
         } else if (stepCount == 3) {
             nodeInfo = new NodeInfo(data);
-            done();
+            done(null);
         } else {
             halt("");
         }
@@ -136,8 +136,8 @@ public class InitTask0 extends AbstractTask {
     }
 
     @Override
-    public void done() {
-        super.done();
+    public void done(Object result) {
+        super.done(result);
         node.setNodeInfo(nodeInfo);
         node.initDone();
     }

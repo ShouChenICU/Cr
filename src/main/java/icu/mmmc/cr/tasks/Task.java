@@ -30,8 +30,10 @@ public interface Task {
 
     /**
      * 结束任务
+     *
+     * @param result 结果
      */
-    void done();
+    void done(Object result);
 
     /**
      * 获取开始时间戳
