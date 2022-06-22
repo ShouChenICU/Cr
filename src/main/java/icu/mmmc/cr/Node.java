@@ -144,6 +144,9 @@ public abstract class Node extends NetNode {
      * @param packetBody 数据包
      */
     public boolean postPacketBlocked(PacketBody packetBody) {
+        if (packetBody == null) {
+            return false;
+        }
         try {
             if (!postLock.tryLock(5, TimeUnit.SECONDS)) {
                 return false;
@@ -155,12 +158,6 @@ public abstract class Node extends NetNode {
         try {
             byte[] dat = encryptor.encrypt(packetBody.serialize());
             doWrite(dat);
-            synchronized (waitSendPacketQueue) {
-                if (!postLock.isLocked() && isConnect() && waitSendPacketQueue.size() > 0) {
-                    key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-                    key.selector().wakeup();
-                }
-            }
             return true;
         } catch (Exception e) {
             Logger.warn(e);
@@ -172,6 +169,12 @@ public abstract class Node extends NetNode {
             return false;
         } finally {
             postLock.unlock();
+            synchronized (waitSendPacketQueue) {
+                if (!postLock.isLocked() && isConnect() && !waitSendPacketQueue.isEmpty()) {
+                    key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                    key.selector().wakeup();
+                }
+            }
         }
     }
 
@@ -180,10 +183,8 @@ public abstract class Node extends NetNode {
      */
     protected void doPost() {
         synchronized (waitSendPacketQueue) {
-            if (postLock.isLocked()) {
+            if (!postLock.tryLock()) {
                 return;
-            } else {
-                postLock.lock();
             }
         }
         PacketBody packetBody;

@@ -136,8 +136,10 @@ abstract class NetNode {
                             packetStatus = 2;
                             break;
                         case 2:
-                            for (; readBuffer.hasRemaining() && packetLength < packetData.length; packetLength++) {
-                                packetData[packetLength] = readBuffer.get();
+                            if (packetLength < packetData.length) {
+                                len = Math.min(readBuffer.remaining(), packetData.length - packetLength);
+                                readBuffer.get(packetData, packetLength, len);
+                                packetLength += len;
                             }
                             if (packetLength == packetData.length) {
                                 dataHandler(packetData);

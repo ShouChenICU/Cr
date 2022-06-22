@@ -31,20 +31,20 @@ import java.util.concurrent.TimeUnit;
  */
 public final class NodeManager {
     /**
-     * 连接超时时长 600s
+     * 连接超时时长 50s
      * 超过此时间即认为连接断开
      */
-    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(600);
+    private static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(50);
     /**
-     * 心跳检测周期 240s
-     * 每240s检测一次
+     * 心跳检测周期 24s
+     * 每24s检测一次
      */
-    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(240);
+    private static final long HEART_TEST_CYCLE = TimeUnit.SECONDS.toMillis(24);
     /**
-     * 心跳时间 300s
+     * 心跳时间 12s
      * 超过这个时间无心跳则测试一次连接
      */
-    private static final long HEART_BEAT_TIME = TimeUnit.SECONDS.toMillis(300);
+    private static final long HEART_BEAT_TIME = TimeUnit.SECONDS.toMillis(12);
     private static final ScheduledThreadPoolExecutor TIMER_EXECUTOR;
     private static final ConcurrentHashMap<String, Node> NODE_MAP;
     private static final List<Node> CONNECTING_NODE_LIST;

@@ -6,6 +6,8 @@ import icu.mmmc.cr.constants.RequestTypes;
 import icu.mmmc.cr.constants.TaskTypes;
 import icu.mmmc.cr.entities.MessageInfo;
 import icu.mmmc.cr.utils.BsonObject;
+import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 
 /**
  * 发起请求任务
@@ -63,6 +65,13 @@ public class RequestTask extends AbstractTask {
     @Override
     public void init(Node node, int taskId) {
         super.init(node, taskId);
+
+        BsonObject object=new BsonObject().set("REQ_TYPE",requestType);
+
+        for(int i=0;i<requestArgs.length;i++){
+            object.set(String.valueOf(i),requestArgs[i]);
+        }
+
         switch (requestType) {
             case RequestTypes.ADD_MEMBER:
             case RequestTypes.DEL_MEMBER:
