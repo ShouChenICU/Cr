@@ -25,6 +25,10 @@ public abstract class AbstractTask implements Task {
      */
     protected final long startTime;
     /**
+     * 进度回调
+     */
+    protected final ProgressCallback callback;
+    /**
      * 更新时间戳
      */
     protected long updateTime;
@@ -36,10 +40,6 @@ public abstract class AbstractTask implements Task {
      * 任务id
      */
     protected int taskId;
-    /**
-     * 进度回调
-     */
-    protected ProgressCallback callback;
     /**
      * 目标任务id
      */
@@ -208,11 +208,11 @@ public abstract class AbstractTask implements Task {
      * 结束任务
      */
     @Override
-    public void done() {
+    public void done(Object result) {
         if (node != null) {
             node.removeTask(taskId);
         }
-        callback.done();
+        callback.done(result);
     }
 
     /**

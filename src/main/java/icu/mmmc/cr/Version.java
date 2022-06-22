@@ -14,15 +14,15 @@ public final class Version {
     /**
      * 副版本号
      */
-    public static final Integer MINOR_VERSION = 1;
+    public static final Integer MINOR_VERSION = 2;
     /**
      * 修订号
      */
-    public static final Integer PATCH_VERSION = 74;
+    public static final Integer PATCH_VERSION = 1;
     /**
      * 通讯协议版本
      */
-    public static final Integer PROTOCOL_VERSION = 1;
+    public static final Integer PROTOCOL_VERSION = 2;
     /**
      * 版本类型
      */

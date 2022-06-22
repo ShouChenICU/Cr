@@ -229,7 +229,7 @@ public class ChatPavilion implements ChatRoom {
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Room is offline");
                 }
-                node.addTask(new RequestTask(null, RequestTypes.ADD_MEMBER, roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), UUID));
+                node.addTask(new RequestTask(null, RequestPaths.ADD_MEMBER, roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), UUID));
             }
         }
     }
@@ -278,7 +278,7 @@ public class ChatPavilion implements ChatRoom {
                 // 推送更新
                 synchronized (onlineNodeMap) {
                     for (Node node : onlineNodeMap.values()) {
-                        node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
+                        node.addTask(new RequestTask(null, RequestPaths.DEL_MEMBER,
                                 memberInfo.getNodeUUID(),
                                 memberInfo.getRoomUUID(),
                                 UUID));
@@ -291,7 +291,7 @@ public class ChatPavilion implements ChatRoom {
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Node is offline");
                 } else {
-                    node.addTask(new RequestTask(null, RequestTypes.DEL_MEMBER,
+                    node.addTask(new RequestTask(null, RequestPaths.DEL_MEMBER,
                             memberInfo.getNodeUUID(),
                             memberInfo.getRoomUUID(),
                             UUID));
@@ -548,7 +548,7 @@ public class ChatPavilion implements ChatRoom {
                     throw new Exception("Node is offline");
                 }
                 node.addTask(new RequestTask(null,
-                        RequestTypes.UPDATE_NICKNAME,
+                        RequestPaths.UPDATE_NICKNAME,
                         nickname,
                         roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
@@ -591,7 +591,7 @@ public class ChatPavilion implements ChatRoom {
                     throw new Exception("Node is offline");
                 }
                 node.addTask(new RequestTask(null,
-                        RequestTypes.UPDATE_LABEL,
+                        RequestPaths.UPDATE_LABEL,
                         label,
                         roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
@@ -634,7 +634,7 @@ public class ChatPavilion implements ChatRoom {
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Node is offline");
                 } else {
-                    node.addTask(new RequestTask(null, RequestTypes.UPDATE_ROOM_TITLE,
+                    node.addTask(new RequestTask(null, RequestPaths.UPDATE_ROOM_TITLE,
                             title,
                             roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID()));
@@ -751,7 +751,7 @@ public class ChatPavilion implements ChatRoom {
                         .setType(MessageTypes.TYPE_TEXT);
                 if (isOwner) {
                     receiveMessage(msg);
-                    callback.done();
+                    callback.done(null);
                 } else {
                     Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
                     if (node == null || !node.isOnline()) {
@@ -761,8 +761,8 @@ public class ChatPavilion implements ChatRoom {
                     node.addTask(new RequestTask(
                             new ProgressAdapter() {
                                 @Override
-                                public void done() {
-                                    finalCallback.done();
+                                public void done(Object result) {
+                                    finalCallback.done(result);
                                 }
 
                                 @Override
@@ -770,7 +770,7 @@ public class ChatPavilion implements ChatRoom {
                                     finalCallback.halt(msg);
                                 }
                             },
-                            RequestTypes.SEND_TEXT_MSG,
+                            RequestPaths.SEND_TEXT_MSG,
                             roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID(),
                             msg));
@@ -866,7 +866,7 @@ public class ChatPavilion implements ChatRoom {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
                 } else if (isOwner) {
-                    callback.done();
+                    callback.done(null);
                     return;
                 }
                 ProgressCallback finalCallback = callback;
@@ -882,8 +882,8 @@ public class ChatPavilion implements ChatRoom {
                     }
 
                     @Override
-                    public void done() {
-                        finalCallback.done();
+                    public void done(Object result) {
+                        finalCallback.done(result);
                         isSyncMessage.set(false);
                     }
 
@@ -921,7 +921,7 @@ public class ChatPavilion implements ChatRoom {
                 if (!isAvailable) {
                     throw new Exception("Room is not available");
                 } else if (isOwner) {
-                    callback.done();
+                    callback.done(null);
                     return;
                 }
                 Node node = NodeManager.getByUUID(roomInfo.getNodeUUID());
@@ -943,8 +943,8 @@ public class ChatPavilion implements ChatRoom {
                         }
 
                         @Override
-                        public void done() {
-                            finalCallback.done();
+                        public void done(Object result) {
+                            finalCallback.done(result);
                             isSyncMember.set(false);
                         }
 

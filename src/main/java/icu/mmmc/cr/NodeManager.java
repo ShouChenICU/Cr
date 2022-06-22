@@ -141,7 +141,7 @@ public final class NodeManager {
                         ChatRoomManager.registerNode(this);
                         heartTest(this);
                         Logger.info("Connected to " + uuid);
-                        finalCallback.done();
+                        finalCallback.done(null);
                         NodeStatusUpdateCallback callback1 = Cr.CallBack.nodeStatusUpdateCallback;
                         if (callback1 != null) {
                             callback1.connected(nodeInfo);

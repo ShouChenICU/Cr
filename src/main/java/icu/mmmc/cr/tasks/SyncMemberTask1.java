@@ -72,7 +72,7 @@ public class SyncMemberTask1 extends AbstractTask {
                 MemberInfo info = new MemberInfo((byte[]) dat);
                 chatPavilion.updateMemberInfo(info);
             }
-            done();
+            done(null);
         }
     }
 

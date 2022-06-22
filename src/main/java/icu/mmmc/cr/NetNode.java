@@ -20,8 +20,8 @@ abstract class NetNode {
     protected final SelectionKey key;
     private final Object keyLock;
     protected final long createTime;
-    protected ByteBuffer readBuffer;
-    protected ByteBuffer writeBuffer;
+    protected final ByteBuffer readBuffer;
+    protected final ByteBuffer writeBuffer;
     protected long writeLength;
     protected long readLength;
     private int packetStatus;

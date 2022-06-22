@@ -24,7 +24,7 @@ public class ProgressAdapter implements ProgressCallback {
      * 进度结束
      */
     @Override
-    public void done() {
+    public void done(Object result) {
     }
 
     /**
