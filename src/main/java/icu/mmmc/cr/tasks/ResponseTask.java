@@ -125,11 +125,12 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.UPDATE_NICKNAME)
-    private void updateNickname(String nickname, String nodeUUID, String roomUUID, String userUUID) throws Exception {
+    private void updateNickname(String nickname, String nodeUUID, String roomUUID) throws Exception {
         ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
+        String userUUID = node.getNodeInfo().getUUID();
         MemberInfo memberInfo = pavilion.getMemberInfo(userUUID);
         if (memberInfo == null) {
             throw new Exception("Member not found");
@@ -139,11 +140,12 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.UPDATE_LABEL)
-    private void updateLabel(String label, String nodeUUID, String roomUUID, String userUUID) throws Exception {
+    private void updateLabel(String label, String nodeUUID, String roomUUID) throws Exception {
         ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
+        String userUUID = node.getNodeInfo().getUUID();
         MemberInfo memberInfo = pavilion.getMemberInfo(userUUID);
         if (memberInfo == null) {
             throw new Exception("Member not found");

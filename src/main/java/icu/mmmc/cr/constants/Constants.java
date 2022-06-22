@@ -10,11 +10,11 @@ public class Constants {
     /**
      * 缓存的消息列表长度
      */
-    public static final int MSG_LIST_BUF_SIZE = 24;
+    public static final int MSG_LIST_BUF_SIZE = 16;
     /**
      * 同步一次消息的数量
      */
-    public static final int SYNC_MESSAGES_QUANTITY = 20;
+    public static final int SYNC_MESSAGES_QUANTITY = 10;
     /**
      * 最大房间名长度
      */
