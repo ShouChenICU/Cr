@@ -276,15 +276,15 @@ public final class ChatRoomManager {
     /**
      * 根据房间标识码获取被管理的聊天室
      *
-     * @param uuid 房间标识码
+     * @param roomUUID 房间标识码
      * @return 聊天室
      */
-    public static ChatRoom getByRoomUUID(String uuid) {
-        if (uuid == null) {
+    public static ChatRoom getManageRoomByUUID(String roomUUID) {
+        if (roomUUID == null) {
             return null;
         }
         synchronized (MANAGE_ROOM_MAP) {
-            return MANAGE_ROOM_MAP.get(uuid);
+            return MANAGE_ROOM_MAP.get(roomUUID);
         }
     }
 

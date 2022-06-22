@@ -229,7 +229,7 @@ public class ChatPavilion implements ChatRoom {
                 if (node == null || !node.isOnline()) {
                     throw new Exception("Room is offline");
                 }
-                node.addTask(new RequestTask(null, RequestPaths.ADD_MEMBER, roomInfo.getNodeUUID(), roomInfo.getRoomUUID(), UUID));
+                node.addTask(new RequestTask(null, RequestPaths.ADD_MEMBER, roomInfo.getRoomUUID(), UUID));
             }
         }
     }
@@ -550,7 +550,6 @@ public class ChatPavilion implements ChatRoom {
                 node.addTask(new RequestTask(null,
                         RequestPaths.UPDATE_NICKNAME,
                         nickname,
-                        roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
             }
         }
@@ -593,7 +592,6 @@ public class ChatPavilion implements ChatRoom {
                 node.addTask(new RequestTask(null,
                         RequestPaths.UPDATE_LABEL,
                         label,
-                        roomInfo.getNodeUUID(),
                         roomInfo.getRoomUUID()));
             }
         }
@@ -636,7 +634,6 @@ public class ChatPavilion implements ChatRoom {
                 } else {
                     node.addTask(new RequestTask(null, RequestPaths.UPDATE_ROOM_TITLE,
                             title,
-                            roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID()));
                 }
             }
@@ -771,7 +768,6 @@ public class ChatPavilion implements ChatRoom {
                                 }
                             },
                             RequestPaths.SEND_TEXT_MSG,
-                            roomInfo.getNodeUUID(),
                             roomInfo.getRoomUUID(),
                             msg));
                 }

@@ -82,8 +82,8 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.ADD_MEMBER)
-    private void addMember(String nodeUUID, String roomUUID, String userUUID) throws Exception {
-        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+    private void addMember(String roomUUID, String userUUID) throws Exception {
+        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getManageRoomByUUID(roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
@@ -112,8 +112,8 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.UPDATE_ROOM_TITLE)
-    private void updateRoomTitle(String title, String nodeUUID, String roomUUID) throws Exception {
-        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+    private void updateRoomTitle(String title, String roomUUID) throws Exception {
+        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getManageRoomByUUID(roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
@@ -125,8 +125,8 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.UPDATE_NICKNAME)
-    private void updateNickname(String nickname, String nodeUUID, String roomUUID) throws Exception {
-        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+    private void updateNickname(String nickname, String roomUUID) throws Exception {
+        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getManageRoomByUUID(roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
@@ -140,8 +140,8 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.UPDATE_LABEL)
-    private void updateLabel(String label, String nodeUUID, String roomUUID) throws Exception {
-        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+    private void updateLabel(String label, String roomUUID) throws Exception {
+        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getManageRoomByUUID(roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }
@@ -155,8 +155,8 @@ public class ResponseTask extends AbstractRequestTask {
     }
 
     @RequestPath(path = RequestPaths.SEND_TEXT_MSG)
-    private void sendTextMessage(String nodeUUID, String roomUUID, MessageInfo messageInfo) throws Exception {
-        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getByUUID(nodeUUID, roomUUID);
+    private void sendTextMessage(String roomUUID, MessageInfo messageInfo) throws Exception {
+        ChatPavilion pavilion = (ChatPavilion) ChatRoomManager.getManageRoomByUUID(roomUUID);
         if (pavilion == null) {
             throw new Exception("Room not found");
         }

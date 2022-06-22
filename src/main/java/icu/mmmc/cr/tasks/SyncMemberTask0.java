@@ -42,7 +42,7 @@ public class SyncMemberTask0 extends AbstractTask {
     protected void handleData(byte[] data) throws Exception {
         if (stepCount == 0) {
             String roomUUID = new String(data, StandardCharsets.UTF_8);
-            ChatRoom chatRoom = ChatRoomManager.getByRoomUUID(roomUUID);
+            ChatRoom chatRoom = ChatRoomManager.getManageRoomByUUID(roomUUID);
             if (chatRoom == null) {
                 String err = "Room not found";
                 sendError(err);

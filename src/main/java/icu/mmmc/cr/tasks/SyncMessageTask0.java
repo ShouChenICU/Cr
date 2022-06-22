@@ -38,7 +38,7 @@ public class SyncMessageTask0 extends AbstractTask {
         BSONObject object = BsonUtils.deserialize(data);
         if (stepCount == 0) {
             String roomUUID = (String) object.get("ROOM_UUID");
-            ChatRoom chatRoom = ChatRoomManager.getByRoomUUID(roomUUID);
+            ChatRoom chatRoom = ChatRoomManager.getManageRoomByUUID(roomUUID);
             if (chatRoom == null) {
                 // 如果找不到房间
                 String err = "Room not found";

@@ -7,7 +7,7 @@
 
     <groupId>icu.mmmc</groupId>
     <artifactId>Cr</artifactId>
-    <version>0.2.1-Alpha</version>
+    <version>0.2.3-Alpha</version>
     <packaging>jar</packaging>
 
     <properties>
